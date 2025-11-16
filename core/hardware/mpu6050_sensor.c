@@ -1,4 +1,5 @@
-// ADC
+// MPU6050 传感器模块 (GY-521)
+// 三轴加速计, 三轴电子陀螺仪, 6DOF角度姿态传感器
 
 #include "stm32f10x.h"                  // Device header
 
@@ -97,8 +98,6 @@
 //     AD0 的状态, 并不会影响 bit0
 //
 
-#define MPU6050_ADDR 0xD0               // MPU6050 从机地址 (AD0 = 0)
-
 /**
   * 函    数：MPU6050写寄存器
   * 参    数：RegAddress 寄存器地址，范围：参考MPU6050手册的寄存器描述
@@ -108,24 +107,24 @@
 static void _writeReg(uint8_t RegAddress, uint8_t Data)
 {
 #ifdef MPU6050_I2C_HW
-    HwI2C_Start();                                                                                              //硬件I2C生成起始条件 并 等待EV5
+    HwI2C_Start();                                                                                                  //硬件I2C生成起始条件 并 等待EV5
 
-    HwI2C_SendAddress(MPU6050_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED);     //硬件I2C发送从机地址，方向为发送 并 等待EV6
-    HwI2C_SendData(RegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTING);                                             //硬件I2C发送寄存器地址 并 等待EV8
-    HwI2C_SendData(Data, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                                    //硬件I2C发送数据 并 等待EV8_2
+    HwI2C_SendAddress(MPU6050_SLAVE_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED);   //硬件I2C发送从机地址，方向为发送 并 等待EV6
+    HwI2C_SendData(RegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTING);                                                 //硬件I2C发送寄存器地址 并 等待EV8
+    HwI2C_SendData(Data, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                                        //硬件I2C发送数据 并 等待EV8_2
 
-    HwI2C_Stop();                                                                                               //硬件I2C生成终止条件
+    HwI2C_Stop();                                                                                                   //硬件I2C生成终止条件
 #else
 	MyI2C_Start();						//I2C起始
 	
-    MyI2C_SendByte(MPU6050_ADDR);       //发送从机地址，读写位为0，表示即将写入
-	MyI2C_ReceiveAck();					//接收应答
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR); //发送从机地址，读写位为0，表示即将写入
+	MyI2C_WaitAck();					//接收应答
 	
     MyI2C_SendByte(RegAddress);			//发送寄存器地址
-	MyI2C_ReceiveAck();					//接收应答
+	MyI2C_WaitAck();					//接收应答
 
 	MyI2C_SendByte(Data);				//发送要写入寄存器的数据
-	MyI2C_ReceiveAck();					//接收应答
+	MyI2C_WaitAck();					//接收应答
 	
     MyI2C_Stop();						//I2C终止
 #endif
@@ -144,16 +143,16 @@ static void _writeArrayReg(uint8_t RegAddress, uint8_t *Data, uint16_t length)
 #else
 	MyI2C_Start();						//I2C起始
 	
-    MyI2C_SendByte(MPU6050_ADDR);       //发送从机地址，读写位为0，表示即将写入
-	MyI2C_ReceiveAck();					//接收应答
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR); //发送从机地址，读写位为0，表示即将写入
+	MyI2C_WaitAck();					//接收应答
 	
     MyI2C_SendByte(RegAddress);			//发送寄存器地址
-	MyI2C_ReceiveAck();					//接收应答
+	MyI2C_WaitAck();					//接收应答
 
     for(uint16_t i = 0; i < length; i++)
     {
         MyI2C_SendByte(Data[i]);	    //发送要写入寄存器的数据
-		MyI2C_ReceiveAck();				//接收应答
+		MyI2C_WaitAck();				//接收应答
     }
 	
     MyI2C_Stop();						//I2C终止
@@ -170,32 +169,32 @@ static uint8_t _readReg(uint8_t RegAddress)
 	uint8_t Data;
 
 #ifdef MPU6050_I2C_HW
-    HwI2C_Start();                                                                                          //硬件I2C生成起始条件 并 等待EV5
-    HwI2C_SendAddress(MPU6050_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED); //硬件I2C发送从机地址，方向为发送 并 等待EV6
-    HwI2C_SendData(RegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                          //硬件I2C发送寄存器地址 并 等待EV8_2
+    HwI2C_Start();                                                                                                  //硬件I2C生成起始条件 并 等待EV5
+    HwI2C_SendAddress(MPU6050_SLAVE_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED);   //硬件I2C发送从机地址，方向为发送 并 等待EV6
+    HwI2C_SendData(RegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                                  //硬件I2C发送寄存器地址 并 等待EV8_2
 
-    HwI2C_Start();                                                                                          //硬件I2C生成重复起始条件 并 等待EV5
-    HwI2C_SendAddress(MPU6050_ADDR, I2C_Direction_Receiver, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED);       //硬件I2C发送从机地址，方向为接收 并 等待EV6
+    HwI2C_Start();                                                                                                  //硬件I2C生成重复起始条件 并 等待EV5
+    HwI2C_SendAddress(MPU6050_SLAVE_ADDR, I2C_Direction_Receiver, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED);         //硬件I2C发送从机地址，方向为接收 并 等待EV6
 
-    HwI2C_Ack(DISABLE);									                                                    //在接收最后一个字节之前提前将应答失能
-	HwI2C_Stop();										                                                    //在接收最后一个字节之前提前申请停止条件
-    Data = HwI2C_ReceiveData();							                                                    //接收数据寄存器
-    HwI2C_Ack(ENABLE);									                                                    //将应答恢复为使能，为了不影响后续可能产生的读取多字节操作
+    HwI2C_Ack(DISABLE);									                                                            //在接收最后一个字节之前提前将应答失能
+	HwI2C_Stop();										                                                            //在接收最后一个字节之前提前申请停止条件
+    Data = HwI2C_ReceiveData();							                                                            //接收数据寄存器
+    HwI2C_Ack(ENABLE);									                                                            //将应答恢复为使能，为了不影响后续可能产生的读取多字节操作
 #else
-	MyI2C_Start();						//I2C起始
-    MyI2C_SendByte(MPU6050_ADDR);       //发送从机地址，读写位为0，表示即将写入
-	MyI2C_ReceiveAck();					//接收应答
-    MyI2C_SendByte(RegAddress);			//发送寄存器地址
-	MyI2C_ReceiveAck();					//接收应答
+	MyI2C_Start();						        //I2C起始
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR);         //发送从机地址，读写位为0，表示即将写入
+	MyI2C_WaitAck();					        //接收应答
+    MyI2C_SendByte(RegAddress);			        //发送寄存器地址
+	MyI2C_WaitAck();					        //接收应答
 	
-	MyI2C_Start();						//I2C重复起始
-    MyI2C_SendByte(MPU6050_ADDR | 0x01);//发送从机地址，读写位为1，表示即将读取
-	MyI2C_ReceiveAck();					//接收应答
+	MyI2C_Start();						        //I2C重复起始
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR | 0x01);  //发送从机地址，读写位为1，表示即将读取
+	MyI2C_WaitAck();					        //接收应答
 
-    Data = MyI2C_ReceiveByte();			//接收指定寄存器的数据
-	MyI2C_SendAck(1);					//发送应答，给从机非应答，终止从机的数据输出
+    Data = MyI2C_ReceiveByte();			        //接收指定寄存器的数据
+	MyI2C_NAck();					        //发送应答，给从机非应答，终止从机的数据输出
 
-	MyI2C_Stop();						//I2C终止
+	MyI2C_Stop();						        //I2C终止
 #endif
 
 	return Data;
@@ -204,51 +203,51 @@ static uint8_t _readReg(uint8_t RegAddress)
 static void _readArrayReg(uint8_t StartRegAddress, uint8_t *Data, uint16_t length)
 {
 #ifdef MPU6050_I2C_HW
-    HwI2C_Start();                                                                                          //硬件I2C生成起始条件 并 等待EV5
-    HwI2C_SendAddress(MPU6050_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED); //硬件I2C发送从机地址，方向为发送 并 等待EV6
-    HwI2C_SendData(StartRegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                     //硬件I2C发送寄存器地址 并 等待EV8_2
+    HwI2C_Start();                                                                                                  //硬件I2C生成起始条件 并 等待EV5
+    HwI2C_SendAddress(MPU6050_SLAVE_ADDR, I2C_Direction_Transmitter, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED);   //硬件I2C发送从机地址，方向为发送 并 等待EV6
+    HwI2C_SendData(StartRegAddress, I2C_EVENT_MASTER_BYTE_TRANSMITTED);                                             //硬件I2C发送寄存器地址 并 等待EV8_2
 
-    HwI2C_Start();                                                                                          //硬件I2C生成重复起始条件 并 等待EV5
-    HwI2C_SendAddress(MPU6050_ADDR, I2C_Direction_Receiver, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED);       //硬件I2C发送从机地址，方向为接收 并 等待EV6
+    HwI2C_Start();                                                                                                  //硬件I2C生成重复起始条件 并 等待EV5
+    HwI2C_SendAddress(MPU6050_SLAVE_ADDR, I2C_Direction_Receiver, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED);         //硬件I2C发送从机地址，方向为接收 并 等待EV6
     
     for(uint16_t i = 0; i < length; i++)
     {
         if (i == length - 1) {
-            HwI2C_Ack(DISABLE);									                                            //在接收最后一个字节之前提前将应答失能
-	        HwI2C_Stop();										                                            //在接收最后一个字节之前提前申请停止条件
+            HwI2C_Ack(DISABLE);									                                                    //在接收最后一个字节之前提前将应答失能
+	        HwI2C_Stop();										                                                    //在接收最后一个字节之前提前申请停止条件
         }
 
-        Data[i] = HwI2C_ReceiveData();		                                                                //接收一个字节数据
+        Data[i] = HwI2C_ReceiveData();		                                                                        //接收一个字节数据
     }
 
-    HwI2C_Ack(ENABLE);									                                                    //将应答恢复为使能，为了不影响后续可能产生的读取多字节操作
+    HwI2C_Ack(ENABLE);									                                                            //将应答恢复为使能，为了不影响后续可能产生的读取多字节操作
 #else
-	MyI2C_Start();						    //I2C起始
+	MyI2C_Start();						        //I2C起始
 
-    MyI2C_SendByte(MPU6050_ADDR);           //发送从机地址，读写位为0，表示即将写入
-	MyI2C_ReceiveAck();					    //接收应答
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR);         //发送从机地址，读写位为0，表示即将写入
+	MyI2C_WaitAck();					        //接收应答
 
-    MyI2C_SendByte(StartRegAddress);	    //发送要读取的**起始**寄存器的地址
-	MyI2C_ReceiveAck();						//接收应答
+    MyI2C_SendByte(StartRegAddress);	        //发送要读取的**起始**寄存器的地址
+	MyI2C_WaitAck();						    //接收应答
 
-    MyI2C_Start();						    //I2C重复起始
+    MyI2C_Start();						        //I2C重复起始
     
-    MyI2C_SendByte(MPU6050_ADDR | 0x01);    //发送从机地址，读写位为1，表示即将读取
-    MyI2C_ReceiveAck();					    //接收应答
+    MyI2C_SendByte(MPU6050_SLAVE_ADDR | 0x01);  //发送从机地址，读写位为1，表示即将读取
+    MyI2C_WaitAck();					        //接收应答
 
     for(uint16_t i = 0; i < length; i++)
     {
-        Data[i] = MyI2C_ReceiveByte();		//接收指定寄存器的数据
+        Data[i] = MyI2C_ReceiveByte();		    //接收指定寄存器的数据
 
         if (i == length - 1) {
-            MyI2C_SendAck(1);               //发送应答，给从机非应答，终止从机的数据输出
+            MyI2C_NAck();                   //发送应答，给从机非应答，终止从机的数据输出
         }
         else {
-            MyI2C_SendAck(0);               //发送应答，给从机应答，继续等待从机的数据输出
+            MyI2C_Ack();                   //发送应答，给从机应答，继续等待从机的数据输出
         }
     }
 	
-    MyI2C_Stop();						    //I2C终止
+    MyI2C_Stop();						         //I2C终止
 #endif
 }
 

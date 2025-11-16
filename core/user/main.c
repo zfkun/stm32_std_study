@@ -15,6 +15,7 @@
 // #include "counter_sensor.h"
 // #include "encoder_sensor.h"
 // #include "mpu6050_sensor.h"
+#include "as5600_sensor.h"
 // #include "pwm.h"
 // #include "servo.h"
 // #include "motor.h"
@@ -31,6 +32,9 @@
 // uint8_t dataA[] = {0x01, 0x02, 0x03, 0x04};
 // uint8_t dataB[] = {0, 0, 0, 0};
 
+#define PI 3.141592
+#define _2PI 6.283185
+
 int main(void)
 {
 	// 配置 NVIC 优先级分组 (全局只需配置一次)
@@ -40,7 +44,7 @@ int main(void)
 	// Timer_Init();
 	// LED_Init();
 	OLED_Init();
-	MyRTC_Init();
+	// MyRTC_Init();
 	// CounterSensor_Init();
 	// EncoderSensor_Init();
 	// PWM_Init();
@@ -51,6 +55,7 @@ int main(void)
 	Serial_Init();
 	// MyI2C_Init();
 	// MPU6050_Init();
+	AS5600_Init();
 
 	// printf("BKP:%x\r\n", BKP_ReadBackupRegister(BKP_DR1));
 	// OLED_ShowHexNum(1, 1, BKP_ReadBackupRegister(BKP_DR1), 4);
@@ -102,10 +107,10 @@ int main(void)
 	// now = mktime(&now_tm);
 	// printf("Now: %d\r\n", now);
 
-	OLED_ShowString(1, 1, "Date:xxxx-xx-xx");
-	OLED_ShowString(2, 1, "Time:xx:xx:xx");
-	OLED_ShowString(3, 1, "CNT:");
-	OLED_ShowString(4, 1, "DIV:");
+	// OLED_ShowString(1, 1, "Date:xxxx-xx-xx");
+	// OLED_ShowString(2, 1, "Time:xx:xx:xx");
+	// OLED_ShowString(3, 1, "CNT:");
+	// OLED_ShowString(4, 1, "DIV:");
 
 	// OLED_ShowString(1, 1, "SYSCLK:");
 	// OLED_ShowNum(1, 8, SystemCoreClock, 8);
@@ -132,8 +137,35 @@ int main(void)
 	// uint8_t rxData;
 	// OLED_ShowString(1, 1, "RxData:");
 
+	OLED_ShowString(1, 1, "RawAngle:");
+	// OLED_ShowString(2, 1, "Angle:");
+	// OLED_ShowString(2, 1, "ClacAngle:");
+	OLED_ShowString(2, 1, "Status:");
+	OLED_ShowString(3, 1, "AGC:");  
+	OLED_ShowString(4, 1, "Magnitude:");
+	AS5600_Data_t angle;
+
 	while(1)
 	{
+		AS5600_GetData(&angle);
+		OLED_ShowNum(1, 10, angle.RawAngle, 4);
+		// OLED_ShowNum(2, 7, angle.Angle, 4);
+		// OLED_ShowNum(2, 11, angle.ClacAngle, 3);
+		OLED_ShowHexNum(2, 8, angle.Status, 2);
+		// OLED_ShowHexNum(4, 1, AS5600_GetStatus(), 4);
+		OLED_ShowNum(3, 5, angle.Agc, 3);
+		OLED_ShowNum(4, 11, angle.Magnitude, 4);
+
+		printf("原始角度: %d\r\n", angle.RawAngle);
+		printf("缩放原始角度: %d\r\n", angle.Angle);
+		printf("转换角度: %d\r\n", angle.ClacAngle);
+		printf("状态: 0x%X\r\n", angle.Status);
+		printf("  - 检测到磁铁: %d\r\n", angle.Status & 0x20 ? 1 : 0);
+		printf("  - 磁铁太强: %d\r\n", angle.Status & 0x08 ? 1 : 0);
+		printf("  - 磁铁太弱: %d\r\n", angle.Status & 0x10 ? 1 : 0);
+		printf("自动增益: %d\r\n", angle.Agc);
+		printf("磁场强度: %d\r\n", angle.Magnitude);
+
 		// if (Serial_GetRxFlag() == 1) {
 		// 	rxData = Serial_GetRxData();
 		// 	Serial_SendByte(rxData);
@@ -167,17 +199,17 @@ int main(void)
 
 		// __WFI(); // 进入 WFI 模式
 
-		MyRTC_ReadTime();
+		// MyRTC_ReadTime();
 
-		OLED_ShowNum(1, 6, MyRTC_Time.Year, 4);  // 年
-		OLED_ShowNum(1, 11, MyRTC_Time.Month, 2); // 月
-		OLED_ShowNum(1, 14, MyRTC_Time.Day, 2); // 日
-		OLED_ShowNum(2, 6, MyRTC_Time.Hour, 2); // 时
-		OLED_ShowNum(2, 9, MyRTC_Time.Minute, 2); // 分
-		OLED_ShowNum(2, 12, MyRTC_Time.Second, 2); // 秒
+		// OLED_ShowNum(1, 6, MyRTC_Time.Year, 4);  // 年
+		// OLED_ShowNum(1, 11, MyRTC_Time.Month, 2); // 月
+		// OLED_ShowNum(1, 14, MyRTC_Time.Day, 2); // 日
+		// OLED_ShowNum(2, 6, MyRTC_Time.Hour, 2); // 时
+		// OLED_ShowNum(2, 9, MyRTC_Time.Minute, 2); // 分
+		// OLED_ShowNum(2, 12, MyRTC_Time.Second, 2); // 秒
 
-		OLED_ShowNum(3, 6, RTC_GetCounter(), 10);
-		OLED_ShowNum(4, 6, RTC_GetDivider(), 10);
+		// OLED_ShowNum(3, 6, RTC_GetCounter(), 10);
+		// OLED_ShowNum(4, 6, RTC_GetDivider(), 10);
 		// // OLED_ShowNum(4, 6, (32767 - RTC_GetDivider()) / 32767.0 * 999, 10); // 重映射到 0 ~ 999
 
 		// printf("RTC: %d-%d-%d %d:%d:%d\r\n", MyRTC_Time.Year, MyRTC_Time.Month, MyRTC_Time.Day,
