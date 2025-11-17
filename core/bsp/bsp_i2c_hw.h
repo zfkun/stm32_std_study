@@ -1,6 +1,8 @@
 #ifndef __BSP_I2C_HW_H__
 #define __BSP_I2C_HW_H__
 
+#include "stm32f10x.h"
+
 void HwI2C_Init(void);
 void HwI2C_Start(void);
 void HwI2C_Stop(void);

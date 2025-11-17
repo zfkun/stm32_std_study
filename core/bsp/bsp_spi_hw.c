@@ -1,46 +1,44 @@
-// SPI (软件)
-
-#include "stm32f10x.h"                  // Device header
+// SPI (硬件)
 
 #include "bsp_delay.h"
 #include "bsp_spi_hw.h"
 
-#ifndef SPI_CHANNEL
-#define SPI_CHANNEL SPI1
+#ifndef MySPI_CHANNEL
+#define MySPI_CHANNEL SPI1
 #endif
 
-#ifndef SPI_SS_PORT
-#define SPI_SS_PORT GPIOA
+#ifndef MySPI_SS_PORT
+#define MySPI_SS_PORT GPIOA
 #endif
-#ifndef SPI_SS_PIN
-#define SPI_SS_PIN GPIO_Pin_4
-#endif
-
-#ifndef SPI_SCK_PORT
-#define SPI_SCK_PORT GPIOA
-#endif
-#ifndef SPI_SCK_PIN
-#define SPI_SCK_PIN GPIO_Pin_5
+#ifndef MySPI_SS_PIN
+#define MySPI_SS_PIN GPIO_Pin_4
 #endif
 
-#ifndef SPI_MOSI_PORT
-#define SPI_MOSI_PORT GPIOA
+#ifndef MySPI_SCK_PORT
+#define MySPI_SCK_PORT GPIOA
 #endif
-#ifndef SPI_MOSI_PIN
-#define SPI_MOSI_PIN GPIO_Pin_7
+#ifndef MySPI_SCK_PIN
+#define MySPI_SCK_PIN GPIO_Pin_5
 #endif
 
-#ifndef SPI_MISO_PORT
-#define SPI_MISO_PORT GPIOA
+#ifndef MySPI_MOSI_PORT
+#define MySPI_MOSI_PORT GPIOA
 #endif
-#ifndef SPI_MISO_PIN
-#define SPI_MISO_PIN GPIO_Pin_6
+#ifndef MySPI_MOSI_PIN
+#define MySPI_MOSI_PIN GPIO_Pin_7
+#endif
+
+#ifndef MySPI_MISO_PORT
+#define MySPI_MISO_PORT GPIOA
+#endif
+#ifndef MySPI_MISO_PIN
+#define MySPI_MISO_PIN GPIO_Pin_6
 #endif
 
 
 void MySPI_W_SS(uint8_t BitValue)
 {
-	GPIO_WriteBit(SPI_SS_PORT, SPI_SS_PIN, (BitAction)BitValue);		//根据BitValue，设置SS引脚的电平
+	GPIO_WriteBit(MySPI_SS_PORT, MySPI_SS_PIN, (BitAction)BitValue);		//根据BitValue，设置SS引脚的电平
 }
 
 static void _clock_init(GPIO_TypeDef* GPIOx) {
@@ -71,7 +69,7 @@ static void _waitFlag(uint16_t flag, FlagStatus status)
 {
 	uint32_t Timeout;
 	Timeout = 100000;
-	while (SPI_I2S_GetFlagStatus(SPI_CHANNEL, flag) != status)
+	while (SPI_I2S_GetFlagStatus(MySPI_CHANNEL, flag) != status)
 	{
 		Timeout --;
 		if (Timeout == 0)
@@ -86,38 +84,38 @@ static void _waitFlag(uint16_t flag, FlagStatus status)
 void MySPI_Init(void)
 {
   // 1. 配置时钟
-	_clock_init(SPI_SS_PORT);
-  if (SPI_SCK_PORT != SPI_SS_PORT) _clock_init(SPI_SCK_PORT);
-  if (SPI_MOSI_PORT != SPI_SS_PORT) _clock_init(SPI_MOSI_PORT);
-  if (SPI_MISO_PORT != SPI_SS_PORT) _clock_init(SPI_MISO_PORT);
+	_clock_init(MySPI_SS_PORT);
+	if (MySPI_SCK_PORT != MySPI_SS_PORT) _clock_init(MySPI_SCK_PORT);
+	if (MySPI_MOSI_PORT != MySPI_SS_PORT) _clock_init(MySPI_MOSI_PORT);
+	if (MySPI_MISO_PORT != MySPI_SS_PORT) _clock_init(MySPI_MISO_PORT);
 	
 	// 2. 配置 GPIO
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出 (片选)
-	GPIO_InitStructure.GPIO_Pin = SPI_SS_PIN;
+	GPIO_InitStructure.GPIO_Pin = MySPI_SS_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(SPI_SS_PORT, &GPIO_InitStructure);
+	GPIO_Init(MySPI_SS_PORT, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;    // 复用输出 (时钟), 交由片上硬件控制
-	GPIO_InitStructure.GPIO_Pin = SPI_SCK_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;    	// 复用输出 (时钟), 交由片上硬件控制
+	GPIO_InitStructure.GPIO_Pin = MySPI_SCK_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(SPI_SCK_PORT, &GPIO_InitStructure);
+	GPIO_Init(MySPI_SCK_PORT, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;    // 复用输出 (主机输出, 从机输如 口), 交由片上硬件控制
-	GPIO_InitStructure.GPIO_Pin = SPI_MOSI_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;    	// 复用输出 (主机输出, 从机输如 口), 交由片上硬件控制
+	GPIO_InitStructure.GPIO_Pin = MySPI_MOSI_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(SPI_MOSI_PORT, &GPIO_InitStructure);
+	GPIO_Init(MySPI_MOSI_PORT, &GPIO_InitStructure);
 	
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;       // 必须是上拉输入 (主机输入, 从机输出 口)
-	GPIO_InitStructure.GPIO_Pin = SPI_MISO_PIN;
+	GPIO_InitStructure.GPIO_Pin = MySPI_MISO_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(SPI_MISO_PORT, &GPIO_InitStructure);
+	GPIO_Init(MySPI_MISO_PORT, &GPIO_InitStructure);
 	
 	// 3. 配置 SPI
-	SPI_Cmd(SPI_CHANNEL, ENABLE);									  //使能SPI，开始运行
+	SPI_Cmd(MySPI_CHANNEL, ENABLE);						//使能SPI，开始运行
 	
 	// 4. 设置默认状态
-	MySPI_W_SS(1);											                //SS默认高电平
+	MySPI_W_SS(1);										//SS默认高电平
 }
 
 void MySPI_Start(void)
@@ -133,9 +131,9 @@ uint8_t MySPI_SwapByte(uint8_t ByteSend)
 {
 	_waitFlag(SPI_I2S_FLAG_TXE, SET);               //等待发送数据寄存器空
 	
-  SPI_I2S_SendData(SPI1, ByteSend);								//写入数据到发送数据寄存器，开始产生时序
+  SPI_I2S_SendData(SPI1, ByteSend);					//写入数据到发送数据寄存器，开始产生时序
 
-  _waitFlag(SPI_I2S_FLAG_RXNE, SET);              //等待接收数据寄存器非空
+  _waitFlag(SPI_I2S_FLAG_RXNE, SET);				//等待接收数据寄存器非空
   
-  return SPI_I2S_ReceiveData(SPI1);								//读取接收到的数据并返回
+  return SPI_I2S_ReceiveData(SPI1);					//读取接收到的数据并返回
 }

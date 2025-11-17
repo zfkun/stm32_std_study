@@ -1,8 +1,6 @@
 // MPU6050 传感器模块 (GY-521)
 // 三轴加速计, 三轴电子陀螺仪, 6DOF角度姿态传感器
 
-#include "stm32f10x.h"                  // Device header
-
 #include "mpu6050_sensor.h"
 #include "mpu6050_sensor_reg.h"
 

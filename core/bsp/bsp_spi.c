@@ -1,7 +1,5 @@
 // SPI (软件)
 
-#include "stm32f10x.h"                  // Device header
-
 #include "bsp_delay.h"
 #include "bsp_spi.h"
 
@@ -127,9 +125,9 @@ void MySPI_Init(void)
 {
   // 1. 配置时钟
 	_clock_init(SPI_SS_PORT);
-  if (SPI_SCK_PORT != SPI_SS_PORT) _clock_init(SPI_SCK_PORT);
-  if (SPI_MOSI_PORT != SPI_SS_PORT) _clock_init(SPI_MOSI_PORT);
-  if (SPI_MISO_PORT != SPI_SS_PORT) _clock_init(SPI_MISO_PORT);
+	if (SPI_SCK_PORT != SPI_SS_PORT) _clock_init(SPI_SCK_PORT);
+	if (SPI_MOSI_PORT != SPI_SS_PORT) _clock_init(SPI_MOSI_PORT);
+	if (SPI_MISO_PORT != SPI_SS_PORT) _clock_init(SPI_MISO_PORT);
 	
 	// 2. 配置 GPIO
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -138,12 +136,12 @@ void MySPI_Init(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(SPI_SS_PORT, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出 (时钟)
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出 (时钟)
 	GPIO_InitStructure.GPIO_Pin = SPI_SCK_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(SPI_SCK_PORT, &GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出 (主机输出, 从机输如 口)
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;    // 推挽输出 (主机输出, 从机输如 口)
 	GPIO_InitStructure.GPIO_Pin = SPI_MOSI_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(SPI_MOSI_PORT, &GPIO_InitStructure);

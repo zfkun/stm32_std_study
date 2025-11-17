@@ -1,6 +1,10 @@
 #ifndef __W25Q64_H
 #define __W25Q64_H
 
+#include "stm32f10x.h"                  // Device header
+
+#define W25Q64_I2C_HW 1	// 使用硬件I2C
+
 void W25Q64_Init(void);
 void W25Q64_ReadID(uint8_t *MID, uint16_t *DID);
 void W25Q64_PageProgram(uint32_t Address, uint8_t *DataArray, uint16_t Count);

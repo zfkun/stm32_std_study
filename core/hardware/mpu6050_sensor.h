@@ -1,7 +1,7 @@
 #ifndef __MPU6050_SENSOR_H__
 #define __MPU6050_SENSOR_H__
 
-#include "stm32f10x.h"
+#include "stm32f10x.h"                  // Device header
 
 // #define MPU6050_I2C_HW 1	// 使用硬件I2C
 

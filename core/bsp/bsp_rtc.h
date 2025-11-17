@@ -1,6 +1,8 @@
 #ifndef __BSP_RTC_H
 #define __BSP_RTC_H
 
+#include "stm32f10x.h"
+
 typedef struct
 {
     uint16_t Year;

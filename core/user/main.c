@@ -32,9 +32,6 @@
 // uint8_t dataA[] = {0x01, 0x02, 0x03, 0x04};
 // uint8_t dataB[] = {0, 0, 0, 0};
 
-#define PI 3.141592
-#define _2PI 6.283185
-
 int main(void)
 {
 	// 配置 NVIC 优先级分组 (全局只需配置一次)
@@ -137,34 +134,36 @@ int main(void)
 	// uint8_t rxData;
 	// OLED_ShowString(1, 1, "RxData:");
 
-	OLED_ShowString(1, 1, "RawAngle:");
-	// OLED_ShowString(2, 1, "Angle:");
-	// OLED_ShowString(2, 1, "ClacAngle:");
-	OLED_ShowString(2, 1, "Status:");
-	OLED_ShowString(3, 1, "AGC:");  
-	OLED_ShowString(4, 1, "Magnitude:");
+	OLED_ShowString(1 * OLED_6X8, 0, "RawAngle:", OLED_6X8);
+	OLED_ShowString(4 * OLED_6X8, 8, "Angle:", OLED_6X8);
+	OLED_ShowString(0, 16, "ClacAngle:", OLED_6X8);
+	OLED_ShowString(3 * OLED_6X8, 24, "Status:", OLED_6X8);
+	OLED_ShowString(6 * OLED_6X8, 32, "AGC:", OLED_6X8);  
+	OLED_ShowString(0, 40, "Magnitude:", OLED_6X8);
+	OLED_Update();
+
 	AS5600_Data_t angle;
 
 	while(1)
 	{
 		AS5600_GetData(&angle);
-		OLED_ShowNum(1, 10, angle.RawAngle, 4);
-		// OLED_ShowNum(2, 7, angle.Angle, 4);
-		// OLED_ShowNum(2, 11, angle.ClacAngle, 3);
-		OLED_ShowHexNum(2, 8, angle.Status, 2);
-		// OLED_ShowHexNum(4, 1, AS5600_GetStatus(), 4);
-		OLED_ShowNum(3, 5, angle.Agc, 3);
-		OLED_ShowNum(4, 11, angle.Magnitude, 4);
+		OLED_ShowNum(10 * OLED_6X8 + 2, 0, angle.RawAngle, 4, OLED_6X8);
+		OLED_ShowNum(10 * OLED_6X8 + 2, 8, angle.Angle, 4, OLED_6X8);
+		OLED_ShowNum(10 * OLED_6X8 + 2, 16, angle.ClacAngle, 3, OLED_6X8);
+		OLED_ShowHexNum(10 * OLED_6X8 + 2, 24, angle.Status, 2, OLED_6X8);
+		OLED_ShowNum(10 * OLED_6X8 + 2, 32, angle.Agc, 3, OLED_6X8);
+		OLED_ShowNum(10 * OLED_6X8 + 2, 40, angle.Magnitude, 4, OLED_6X8);
+		OLED_Update();
 
-		printf("原始角度: %d\r\n", angle.RawAngle);
-		printf("缩放原始角度: %d\r\n", angle.Angle);
-		printf("转换角度: %d\r\n", angle.ClacAngle);
-		printf("状态: 0x%X\r\n", angle.Status);
-		printf("  - 检测到磁铁: %d\r\n", angle.Status & 0x20 ? 1 : 0);
-		printf("  - 磁铁太强: %d\r\n", angle.Status & 0x08 ? 1 : 0);
-		printf("  - 磁铁太弱: %d\r\n", angle.Status & 0x10 ? 1 : 0);
-		printf("自动增益: %d\r\n", angle.Agc);
-		printf("磁场强度: %d\r\n", angle.Magnitude);
+		// printf("原始角度: %d\r\n", angle.RawAngle);
+		// printf("缩放原始角度: %d\r\n", angle.Angle);
+		// printf("转换角度: %d\r\n", angle.ClacAngle);
+		// printf("状态: 0x%X\r\n", angle.Status);
+		// printf("  - 检测到磁铁: %d\r\n", angle.Status & 0x20 ? 1 : 0);
+		// printf("  - 磁铁太强: %d\r\n", angle.Status & 0x08 ? 1 : 0);
+		// printf("  - 磁铁太弱: %d\r\n", angle.Status & 0x10 ? 1 : 0);
+		// printf("自动增益: %d\r\n", angle.Agc);
+		// printf("磁场强度: %d\r\n", angle.Magnitude);
 
 		// if (Serial_GetRxFlag() == 1) {
 		// 	rxData = Serial_GetRxData();

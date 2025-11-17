@@ -1,6 +1,8 @@
 #ifndef __BSP_I2C_H__
 #define __BSP_I2C_H__
 
+#include "stm32f10x.h"
+
 #ifdef _I2C_C_
     #define _I2C_EXT_
 #else

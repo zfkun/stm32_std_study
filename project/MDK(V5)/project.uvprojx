@@ -337,10 +337,10 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls></MiscControls>
+              <MiscControls>--no-multibyte-chars</MiscControls>
               <Define>USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\driver\CMSIS;..\..\driver\STM32F10x_StdPeriph_Driver;..\..\driver\STM32F10x_StdPeriph_Driver\inc;..\..\core\bsp;..\..\core\user</IncludePath>
+              <IncludePath>..\..\driver\CMSIS;..\..\driver\STM32F10x_StdPeriph_Driver;..\..\driver\STM32F10x_StdPeriph_Driver\inc;..\..\core\bsp;..\..\core\hardware;..\..\core\user</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -547,6 +547,131 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>App/Bsp</GroupName>
+          <Files>
+            <File>
+              <FileName>bsp_delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_delay.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_math.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_math.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_i2c_hw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_i2c_hw.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_spi_hw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_spi_hw.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>App/Hardware</GroupName>
+          <Files>
+            <File>
+              <FileName>ad.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\ad.c</FilePath>
+            </File>
+            <File>
+              <FileName>as5600_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\as5600_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>counter_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\counter_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>dma.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\dma.c</FilePath>
+            </File>
+            <File>
+              <FileName>encoder_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\encoder_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>ic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\ic.c</FilePath>
+            </File>
+            <File>
+              <FileName>key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\key.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\led.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>mpu6050_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\mpu6050_sensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\oled.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\oled_data.c</FilePath>
+            </File>
+            <File>
+              <FileName>pwm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\pwm.c</FilePath>
+            </File>
+            <File>
+              <FileName>serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>servo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\servo.c</FilePath>
+            </File>
+            <File>
+              <FileName>w25q64.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\hardware\w25q64.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>App/Startup</GroupName>
           <Files>
             <File>
@@ -555,9 +680,6 @@
               <FilePath>..\..\driver\CMSIS\startup_stm32f10x_ld.s</FilePath>
             </File>
           </Files>
-        </Group>
-        <Group>
-          <GroupName>App/Bsp</GroupName>
         </Group>
         <Group>
           <GroupName>App/User</GroupName>

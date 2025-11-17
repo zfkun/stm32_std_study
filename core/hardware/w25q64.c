@@ -1,8 +1,11 @@
-#include "stm32f10x.h"                  // Device header
-// #include "bsp_spi.h"					// 软件SPI
-#include "bsp_spi_hw.h"					// 硬件SPI
 #include "w25q64.h"
 #include "w25q64_ins.h"
+
+#ifdef W25Q64_I2C_HW
+#include "bsp_spi_hw.h"					// 硬件SPI
+#else
+#include "bsp_spi.h"					// 软件SPI
+#endif
 
 /**
   * 函    数：W25Q64初始化
