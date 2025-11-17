@@ -1,5 +1,6 @@
 // 输入捕获
 
+#include "bsp_utils.h"
 #include "ic.h"
 
 // 基本公式 - 频率测量
@@ -48,8 +49,7 @@ void IC_Init(void)
 
 
     // 1. 配置 时钟 (定时器, GPIO)
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE); // TIM2 被用于PWM输出, 要换个用于捕获
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    Utils_RCC_PeriphClock_Enable(RCC_APB1Periph_TIM3 | RCC_APB2Periph_GPIOA); // TIM2 被用于PWM输出, 要换个TIM3用于捕获
 
     // 2. 配置 GPIO (复用推挽输出)
     GPIO_InitTypeDef GPIO_InitStructure;

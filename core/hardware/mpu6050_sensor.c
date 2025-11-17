@@ -233,15 +233,15 @@ static void _readArrayReg(uint8_t StartRegAddress, uint8_t *Data, uint16_t lengt
     MyI2C_SendByte(MPU6050_SLAVE_ADDR | 0x01);  //发送从机地址，读写位为1，表示即将读取
     MyI2C_WaitAck();					        //接收应答
 
-    for(uint16_t i = 0; i < length; i++)
+    for (uint16_t i = 0; i < length; i++)
     {
         Data[i] = MyI2C_ReceiveByte();		    //接收指定寄存器的数据
 
         if (i == length - 1) {
-            MyI2C_NAck();                   //发送应答，给从机非应答，终止从机的数据输出
+            MyI2C_NAck();                       //发送应答，给从机非应答，终止从机的数据输出
         }
         else {
-            MyI2C_Ack();                   //发送应答，给从机应答，继续等待从机的数据输出
+            MyI2C_Ack();                        //发送应答，给从机应答，继续等待从机的数据输出
         }
     }
 	

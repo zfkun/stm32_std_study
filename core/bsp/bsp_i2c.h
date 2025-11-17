@@ -3,6 +3,24 @@
 
 #include "stm32f10x.h"
 
+#define I2C_DELAY_DISABLE 1     // 关闭 SCL / SDA 收发时的延迟等待
+
+#ifndef I2C_SCL_PORT
+#define I2C_SCL_PORT GPIOB
+#endif
+
+#ifndef I2C_SDA_PORT
+#define I2C_SDA_PORT GPIOB
+#endif
+
+#ifndef I2C_SCL_PIN
+#define I2C_SCL_PIN GPIO_Pin_10
+#endif
+
+#ifndef I2C_SDA_PIN
+#define I2C_SDA_PIN GPIO_Pin_11
+#endif
+
 #ifdef _I2C_C_
     #define _I2C_EXT_
 #else

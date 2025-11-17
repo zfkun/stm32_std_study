@@ -1,4 +1,3 @@
-#include "stm32f10x.h"                  // Device header
 #include <time.h>
 #include "bsp_rtc.h"
 

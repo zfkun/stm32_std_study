@@ -1,3 +1,4 @@
+#include "bsp_utils.h"
 #include "pwm.h"
 
 // 基本公式
@@ -12,39 +13,34 @@
 // - Freq: PWM频率 (单位: Hz)
 // - Duty: PWM占空比 (范围: 0 ~ 1)
 // - Reso: PWM分辨率 (范围: 0 ~ 1)
-
-typedef struct {
-    uint16_t ARR; // 自动重装器
-    uint16_t PSC; // 预分频器
-    uint16_t CCR; // 输出比较
-    uint16_t GPIO_pin; // GPIO引脚
-} PWM_Config;
+//
 
 void PWM_Init(void)
 {
-    // 测试用例: 基本PWM波形输出 (1kHz, 50%占空比, 1%分辨率)
-    //
-    // 目标: 配置 TIM2 产生 PWM 波形, 频率 1000Hz, 占空比 50%, 分辨率 1%
-    //
-    // 在当前环境(时钟频率 72MHz)下, 套用上述的公式:
-    // - 1000Hz = 72MHz / (PSC + 1) / (ARR + 1)
-    // - 50% = CCR / (ARR + 1)
-    // - 1% = 1 / (ARR + 1)
-    // 那么:
-    // - ARR + 1 = 100
-    // - PSC + 1 = 720
-    // 最终 ARR, PSC, CCR 的值为:
-    // - ARR = 99   (有效值: 0 ~ 65535)
-    // - PSC = 719  (有效值: 0 ~ 65535)
-    // - CCR = 50
-    PWM_Config config =
-    {
-        .ARR = 100 - 1,
-        .PSC = 720 - 1,
-        .CCR = 50,
-        .GPIO_pin = GPIO_Pin_0, // TIM2_CH1_ETR 默认对应 PA0
-        // .GPIO_pin = GPIO_Pin_15; // TIM2_CH1_ETR 重映射到 PA15
-    };
+    // // 测试用例: 基本PWM波形输出 (1kHz, 50%占空比, 1%分辨率)
+    // //
+    // // 目标: 配置 TIM2 产生 PWM 波形, 频率 1kHz, 占空比 50%, 分辨率 1%
+    // //
+    // // 在当前环境(时钟频率 72MHz)下, 套用上述的公式:
+    // // - 1kHz = 1000Hz = 72MHz / (PSC + 1) / (ARR + 1)
+    // // - 50% = CCR / (ARR + 1)
+    // // - 1% = 1 / (ARR + 1)
+    // // 那么: (借助 Timer 的输出频率计算公式, 可以推导合适的 PSC 和 ARR 组合)
+    // // - ARR + 1 = 100
+    // // - PSC + 1 = 720
+    // // 最终 ARR, PSC, CCR 的值为:
+    // // - ARR = 99   (有效值: 0 ~ 65535)
+    // // - PSC = 719  (有效值: 0 ~ 65535)
+    // // - CCR = 50
+    // PWM_Config config =
+    // {
+    //     .ARR = 100 - 1,
+    //     .PSC = 720 - 1,
+    //     .CCR = 50,
+    //     .GPIO_port = GPIOA,
+    //     .GPIO_pin = GPIO_Pin_0, // TIM2_CH1_ETR 默认对应 PA0
+    //     // .GPIO_pin = GPIO_Pin_15; // TIM2_CH1_ETR 重映射到 PA15
+    // };
 
     // // 测试用例: SG90舵机PWM输出 (SG90, 180°)
     // // - 脉冲周期: 20ms
@@ -88,6 +84,7 @@ void PWM_Init(void)
     //     .ARR = 20000 - 1,
     //     .PSC = 72 - 1,
     //     .CCR = 0, // 初始默认给0, 后续按需修改调整占空比
+    //     .GPIO_port = GPIOA,
     //     .GPIO_pin = GPIO_Pin_1, // TIM2_CH2_ETR 默认对应 PA1
     // };
 
@@ -99,12 +96,23 @@ void PWM_Init(void)
     //     .ARR = 100 - 1,
     //     .PSC = 36 - 1,
     //     .CCR = 0, // 
-    //     .GPIO_pin = GPIO_Pin_2,
+    //     .GPIO_port = GPIOA,
+    //     .GPIO_pin = GPIO_Pin_2, // 使用 TIM2_CH3 通道产生PWM
     // };
 
+    // 测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出
+    PWM_Config config =
+    {
+        .ARR = 100 - 1,
+        .PSC = 36 - 1,
+        .CCR = 0, // 
+        .GPIO_port = GPIOA,
+        .GPIO_pin = GPIO_Pin_0 | GPIO_Pin_1, // 使用 TIM2_CH1_ETR (PA0) 和 TIM2_CH2 (PA1) 2个通道产生2个PWM
+    };
+
     // 1. 配置 时钟 (定时器, GPIO)
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    Utils_RCC_PeriphClock_Enable(RCC_APB1Periph_TIM2);
+    Utils_RCC_PeriphClock_Enable(RCC_APB2Periph_GPIOA);
 
     // // 1.1 GPIO部分重映射 (将TIM2_CH1从PA0重映射到PA15)
     // RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE); // 使能复用功能时钟
@@ -116,11 +124,11 @@ void PWM_Init(void)
 	GPIO_InitStructure.GPIO_Pin = config.GPIO_pin;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; // 复用推挽输出 (引脚输出控制权交给外设)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_Init(config.GPIO_port, &GPIO_InitStructure);
 
     // 3. 配置 时钟源
 	// 3.1 内部时钟源
-	TIM_InternalClockConfig(TIM2);
+	TIM_InternalClockConfig(PWM_TIM);
 
     // 4. 配置 时基单元 (PSC, ARR, CNT)
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
@@ -129,7 +137,7 @@ void PWM_Init(void)
 	TIM_TimeBaseStructure.TIM_Period = config.ARR; // 自动重装器的值 (ARR)
 	TIM_TimeBaseStructure.TIM_Prescaler = config.PSC; // 预分频器的值 (PSC)
 	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0; // 不重复 (仅TIM1和TIM8有效)
-	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+	TIM_TimeBaseInit(PWM_TIM, &TIM_TimeBaseStructure);
 
     // 5. 配置 输出比较单元
     TIM_OCInitTypeDef TIM_OCInitStructure;
@@ -138,42 +146,56 @@ void PWM_Init(void)
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High; // 高电平有效
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; // 使能输出
     TIM_OCInitStructure.TIM_Pulse = config.CCR; // 初始输出比较值 (CCR)
-    TIM_OC1Init(TIM2, &TIM_OCInitStructure); // 使用输出比较单元1 (测试用例: 基本PWM)
-    // TIM_OC2Init(TIM2, &TIM_OCInitStructure); // 使用输出比较单元2 (测试用例: SG90舵机PWM)
-    // TIM_OC3Init(TIM2, &TIM_OCInitStructure); // 使用输出比较单元3 (测试用例: TB6612直流电机PWM)
+    // TIM_OC1Init(PWM_TIM, &TIM_OCInitStructure); // 使用输出比较单元1 (测试用例: 基本PWM)
+    // TIM_OC2Init(PWM_TIM, &TIM_OCInitStructure); // 使用输出比较单元2 (测试用例: SG90舵机PWM)
+    // TIM_OC3Init(PWM_TIM, &TIM_OCInitStructure); // 使用输出比较单元3 (测试用例: TB6612直流电机PWM)
+    TIM_OC1Init(PWM_TIM, &TIM_OCInitStructure);    // 初始化PWM1, 对应PA0 (测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出)
+    TIM_OC2Init(PWM_TIM, &TIM_OCInitStructure);    // 初始化PWM2, 对应PA1 (测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出)
 
     // 6. 启动定时器
-    TIM_Cmd(TIM2, ENABLE);
+    TIM_Cmd(PWM_TIM, ENABLE);
 
 
     // ===== 常用的单独配置 =====
 	// 修改CCR寄存器的值 (常用于运行时修改占空比)
-    // TIM_SetCompare1(TIM2, 5000);
-    // TIM_SetCompare2(TIM2, 5000);
-    // TIM_SetCompare3(TIM2, 5000);
-    // TIM_SetCompare4(TIM2, 5000);
+    // TIM_SetCompare1(PWM_TIM, 5000);
+    // TIM_SetCompare2(PWM_TIM, 5000);
+    // TIM_SetCompare3(PWM_TIM, 5000);
+    // TIM_SetCompare4(PWM_TIM, 5000);
 }
 
 uint16_t PWM_GetTIMCount(void)
 {
-    return TIM_GetCounter(TIM2);
+    return TIM_GetCounter(PWM_TIM);
 }
 
-void PWM_SetCompare(uint16_t compare)
+void PWM_SetCompare1(uint16_t compare)
 {
-    TIM_SetCompare1(TIM2, compare); // 测试用例: 基本PWM
-    // TIM_SetCompare2(TIM2, compare); // 测试用例: SG90舵机PWM
-    // TIM_SetCompare3(TIM2, compare); // 测试用例: TB6612直流电机PWM
+    // TIM_SetCompare1(PWM_TIM, compare); // 测试用例: 基本PWM
+    // TIM_SetCompare2(PWM_TIM, compare); // 测试用例: SG90舵机PWM
+    // TIM_SetCompare3(PWM_TIM, compare); // 测试用例: TB6612直流电机PWM
+    TIM_SetCompare1(PWM_TIM, compare); // 测试用例: 测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出
 }
 
-uint16_t PWM_GetCompare(void)
+void PWM_SetCompare2(uint16_t compare)
 {
-    return TIM_GetCapture1(TIM2); // 测试用例: 基本PWM
-    // return TIM_GetCapture2(TIM2); // 测试用例: SG90舵机PWM
-    // return TIM_GetCapture3(TIM2); // 测试用例: TB6612直流电机PWM
+    TIM_SetCompare2(PWM_TIM, compare); // 测试用例: 测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出
+}
+
+uint16_t PWM_GetCompare1(void)
+{
+    // return TIM_GetCapture1(PWM_TIM); // 测试用例: 基本PWM
+    // return TIM_GetCapture2(PWM_TIM); // 测试用例: SG90舵机PWM
+    // return TIM_GetCapture3(PWM_TIM); // 测试用例: TB6612直流电机PWM
+    return TIM_GetCapture1(PWM_TIM); // 测试用例: 测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出
+}
+
+uint16_t PWM_GetCompare2(void)
+{
+    return TIM_GetCapture2(PWM_TIM); // 测试用例: 测试用例: TB6612 驱动平衡车2轮子(TT直流电机)PWM输出
 }
 
 void PWM_SetPrescaler(uint16_t prescaler)
 {
-    TIM_PrescalerConfig(TIM2, prescaler, TIM_PSCReloadMode_Immediate);
+    TIM_PrescalerConfig(PWM_TIM, prescaler, TIM_PSCReloadMode_Immediate);
 }

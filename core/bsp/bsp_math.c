@@ -1,4 +1,4 @@
-#include "stm32f10x.h"
+
 #include "bsp_math.h"
 
 /**
@@ -7,14 +7,14 @@
  * @param x 输入值
  * @param y 幂次
  */
-uint32_t pow(uint32_t x, uint8_t y)
+unsigned int Math_Pow(unsigned int x, unsigned char y)
 {
     if (x == 0 || y == 0)
     {
         return 1;
     }
 
-    uint32_t res = 1;
+    unsigned int res = 1;
     while (y--)
     {
         res *= x;
@@ -32,7 +32,7 @@ uint32_t pow(uint32_t x, uint8_t y)
  * @param toLow 输出最小值
  * @param toHigh 输出最大值
  */
-float map(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
+float Math_Map(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
 	if (fromLow == fromHigh) {
 		return (toLow == toHigh) ? toLow : (value > fromLow ? toHigh : toLow);
 	}
@@ -53,7 +53,7 @@ float map(float value, float fromLow, float fromHigh, float toLow, float toHigh)
  * @param min 最小值
  * @param max 最大值
  */
-float normalize(float value, float min, float max) {
+float Math_Normalize(float value, float min, float max) {
 	if (min >= max) {
 		return 0.0f;
 	}

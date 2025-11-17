@@ -4,7 +4,7 @@
 // 板级功能
 #include "bsp_delay.h"
 #include "bsp_timer.h"
-#include "bsp_rtc.h"
+// #include "bsp_rtc.h"
 // #include "bsp_i2c.h"
 
 // 外设模块
@@ -14,7 +14,7 @@
 #include "serial.h"
 // #include "counter_sensor.h"
 // #include "encoder_sensor.h"
-// #include "mpu6050_sensor.h"
+#include "mpu6050_sensor.h"
 #include "as5600_sensor.h"
 // #include "pwm.h"
 // #include "servo.h"
@@ -23,8 +23,8 @@
 // #include "ad.h"
 // #include "dma.h"
 
-// uint8_t keyNum = 0;
-// uint16_t keyClickTotal = 0;
+uint8_t keyNum = 0;
+uint16_t keyClickTotal = 0;
 // int8_t speed = 0;
 // int8_t speed_inc = 10; 
 // uint16_t advalue;
@@ -32,13 +32,53 @@
 // uint8_t dataA[] = {0x01, 0x02, 0x03, 0x04};
 // uint8_t dataB[] = {0, 0, 0, 0};
 
+
+uint16_t timer_count = 0;
+
+MPU6050_Data_t mpu = {0};
+uint8_t mpu_ready = 0;
+void onTimerUpdate(void) {
+	Key_Tick();
+
+	mpu_ready = 1;  // 更新 MPU6050 读取标志
+}
+
+void afterTimerUpdate(void) {
+	timer_count = Timer_GetTIMCount(); // 调试查看中断耗时
+}
+
+// void TIM1_UP_IRQHandler(void)
+// {
+// 	if (TIM_GetITStatus(TIM1, TIM_IT_Update) == SET)
+// 	{
+// 		// TIM_ClearITPendingBit(TIM1, TIM_IT_Update);			// 先清除中断标志位, 但要注意处理重叠问题
+
+// 		mpu_ready = 1;
+
+// 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);
+
+// 		// // 检查是否发生重叠
+// 		// if (TIM_GetITStatus(TIM1, TIM_IT_Update) == SET) {
+// 		// 	timerRepeatFlag = 1;
+// 		// 	TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		// 发生重叠, 立即清除中断标志位
+// 		// }
+
+// 		timer_count = Timer_GetTIMCount();
+// 	}
+// }
+
+
 int main(void)
 {
 	// 配置 NVIC 优先级分组 (全局只需配置一次)
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
-	// Key_Init();
-	// Timer_Init();
+	Key_Init();
+	Timer_SetOnTimerTick(onTimerUpdate);
+	Timer_SetAfterTimerTick(afterTimerUpdate);
+
+	Timer_Init();
+
 	// LED_Init();
 	OLED_Init();
 	// MyRTC_Init();
@@ -51,8 +91,8 @@ int main(void)
 	// AD_Init();
 	Serial_Init();
 	// MyI2C_Init();
-	// MPU6050_Init();
-	AS5600_Init();
+	MPU6050_Init();
+	// AS5600_Init();
 
 	// printf("BKP:%x\r\n", BKP_ReadBackupRegister(BKP_DR1));
 	// OLED_ShowHexNum(1, 1, BKP_ReadBackupRegister(BKP_DR1), 4);
@@ -63,7 +103,7 @@ int main(void)
 	// MyI2C_Stop();
 	// printf("MPU6050 ACK: %d\r\n", ack);
 	// OLED_ShowNum(3, 1, ack, 3);
-	// uint8_t mpuID = MPU6050_GetID();
+	uint8_t mpuID = MPU6050_GetID();
 	// OLED_ShowString(1, 1, "MPU6050:");
 	// OLED_ShowHexNum(1, 9, mpuID, 2);
 
@@ -85,8 +125,6 @@ int main(void)
 	// OLED_ShowHexNum(3, 7, dataB[2], 2);
 	// OLED_ShowHexNum(3, 10, dataB[3], 2);
 	// MyDMA_Init((uint32_t)dataA, (uint32_t)dataB, 16);
-
-	// MPU6050_Data_t mpu = {0};
 
 	// now = 1672588795;
 	// OLED_ShowString(2, 1, "Time:");
@@ -132,28 +170,29 @@ int main(void)
 	// printf("alarmVal: %d\r\n", alarmVal);
 
 	// uint8_t rxData;
-	// OLED_ShowString(1, 1, "RxData:");
-
-	OLED_ShowString(1 * OLED_6X8, 0, "RawAngle:", OLED_6X8);
-	OLED_ShowString(4 * OLED_6X8, 8, "Angle:", OLED_6X8);
-	OLED_ShowString(0, 16, "ClacAngle:", OLED_6X8);
-	OLED_ShowString(3 * OLED_6X8, 24, "Status:", OLED_6X8);
-	OLED_ShowString(6 * OLED_6X8, 32, "AGC:", OLED_6X8);  
-	OLED_ShowString(0, 40, "Magnitude:", OLED_6X8);
-	OLED_Update();
-
-	AS5600_Data_t angle;
+	
+	// AS5600_Data_t angle;
 
 	while(1)
 	{
-		AS5600_GetData(&angle);
-		OLED_ShowNum(10 * OLED_6X8 + 2, 0, angle.RawAngle, 4, OLED_6X8);
-		OLED_ShowNum(10 * OLED_6X8 + 2, 8, angle.Angle, 4, OLED_6X8);
-		OLED_ShowNum(10 * OLED_6X8 + 2, 16, angle.ClacAngle, 3, OLED_6X8);
-		OLED_ShowHexNum(10 * OLED_6X8 + 2, 24, angle.Status, 2, OLED_6X8);
-		OLED_ShowNum(10 * OLED_6X8 + 2, 32, angle.Agc, 3, OLED_6X8);
-		OLED_ShowNum(10 * OLED_6X8 + 2, 40, angle.Magnitude, 4, OLED_6X8);
-		OLED_Update();
+		// AS5600_GetData(&angle);
+		// OLED_Printf(1 * OLED_6X8, 0, OLED_6X8, "RawAngle: %d", angle.RawAngle);
+		// OLED_Printf(4 * OLED_6X8, 8, OLED_6X8, "Angle: %d", angle.Angle);
+		// OLED_Printf(0, 16, OLED_6X8, "ClacAngle: %d", angle.ClacAngle);
+		// OLED_Printf(3 * OLED_6X8, 24, OLED_6X8, "Status: %x", angle.Status);
+		// OLED_Printf(6 * OLED_6X8, 32, OLED_6X8, "AGC: %d", angle.Agc);
+		// OLED_Printf(0, 40, OLED_6X8, "Magnitude: %06d", angle.Magnitude);
+		// OLED_Update();
+
+		// // Blink
+		// LED_ON();
+		// Delay_ms(500);
+		// LED_OFF();
+		// Delay_ms(500);
+		// LED_Turn();
+		// Delay_ms(500);
+		// LED_Turn();
+		// Delay_ms(500);
 
 		// printf("原始角度: %d\r\n", angle.RawAngle);
 		// printf("缩放原始角度: %d\r\n", angle.Angle);
@@ -168,7 +207,8 @@ int main(void)
 		// if (Serial_GetRxFlag() == 1) {
 		// 	rxData = Serial_GetRxData();
 		// 	Serial_SendByte(rxData);
-		// 	OLED_ShowHexNum(1, 8, rxData, 2);
+		// 	OLED_ShowHexNum(0, 8, rxData, 2, OLED_6X8);
+		// 	OLED_ShowChar(0, 16, rxData, OLED_6X8);
 		// }
 		
 		// OLED_ShowString(4, 1, "Runing");
@@ -219,12 +259,6 @@ int main(void)
 		// {
 		// // 	LED1_Turn();
 
-		// 	keyClickTotal++;
-		// // 	OLED_ShowNum(1, 1, keyClickTotal, 4);
-		// // 	OLED_ShowSignedNum(2, 1, keyClickTotal, 4);
-		// // 	OLED_ShowBinNum(3, 1, keyClickTotal, 4);
-		// // 	OLED_ShowHexNum(4, 1, 0xABCD1234, 8);
-		// // 	OLED_ShowChar(4, 10, 'A');
 		
 		// 	if (speed > 60) {
 		// 		speed_inc = -10;
@@ -256,26 +290,35 @@ int main(void)
 		// OLED_ShowString(2, 1, "Encoder:");
 		// OLED_ShowNum(2, 9, EncoderSensor_GetCountWithReset(), 6);
 
-		// OLED_ShowString(2, 1, "Timer:");
-		// OLED_ShowNum(2, 7, Timer_GetCount(), 6);
+		// OLED_Printf(0, 48, OLED_6X8, "Timer: %d", Timer_GetCount());
+		// OLED_Update();
 
-		// if (mpuID > 0) {
-		// 	MPU6050_GetData(&mpu);
-		// 	// printf("AccX: %d\r\n", mpu.AccX);
-		// 	// printf("AccY: %d\r\n", mpu.AccY);
-		// 	// printf("AccZ: %d\r\n", mpu.AccZ);
-		// 	// printf("GyroX: %d\r\n", mpu.GyroX);
-		// 	// printf("GyroY: %d\r\n", mpu.GyroY);
-		// 	// printf("GyroZ: %d\r\n", mpu.GyroZ);
-		// 	// printf("Temp: %d\r\n", mpu.Temp);
-		// 	// Delay_ms(1000);
-		// 	OLED_ShowSignedNum(2, 1, mpu.AccX, 5);
-		// 	OLED_ShowSignedNum(3, 1, mpu.AccY, 5);
-		// 	OLED_ShowSignedNum(4, 1, mpu.AccZ, 5);
-		// 	OLED_ShowSignedNum(2, 8, mpu.GyroX, 5);
-		// 	OLED_ShowSignedNum(3, 8, mpu.GyroY, 5);
-		// 	OLED_ShowSignedNum(4, 8, mpu.GyroZ, 5);
+		// keyNum = Key_GetNum();
+		// if (keyNum == 1) {
+		// 	keyClickTotal++;
+		// } else if (keyNum == 2) {
+		// 	keyClickTotal += 10;
 		// }
+		// OLED_Printf(0, 56, OLED_6X8, "Key: %d", keyClickTotal);
+		// OLED_Update();
+
+		if (mpuID > 0) {
+			if (mpu_ready) {
+				mpu_ready = 0;
+				MPU6050_GetData(&mpu);
+			}
+
+			OLED_Printf(0, 0, OLED_6X8, "Ax: %+06d", mpu.AccX);
+			OLED_Printf(0, 8, OLED_6X8, "Ay: %+06d", mpu.AccY);
+			OLED_Printf(0, 16, OLED_6X8, "Az: %+06d", mpu.AccZ);
+			OLED_Printf(0, 24, OLED_6X8, "Gx: %+06d", mpu.GyroX);
+			OLED_Printf(0, 32, OLED_6X8, "Gy: %+06d", mpu.GyroY);
+			OLED_Printf(0, 40, OLED_6X8, "Gz: %+06d", mpu.GyroZ);
+		}
+
+		// printf("Timer: %d\r\n", timer_count);
+		OLED_Printf(0, 56, OLED_6X8, "Timer: %05d", timer_count);
+		OLED_Update();
 
 
 

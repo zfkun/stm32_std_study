@@ -20,10 +20,10 @@ void Servo_Init(void)
  */
 void Servo_SetAngle(float angle)
 {
-    PWM_SetCompare(map(angle, 0, 180, 500, 2500));
+    PWM_SetCompare1(Math_Map(angle, 0, 180, 500, 2500));
 }
 
 float Servo_getAngle(void)
 {
-    return map(PWM_GetCompare(), 500, 2500, 0, 180);
+    return Math_Map(PWM_GetCompare1(), 500, 2500, 0, 180);
 }

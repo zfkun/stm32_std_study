@@ -1,5 +1,6 @@
 // DMA
 
+#include "bsp_utils.h"
 #include "dma.h"
 
 // 一些基本概念
@@ -21,7 +22,7 @@ void MyDMA_Init(uint32_t fromAddr, uint32_t toAddr, uint16_t size)
     _bufferSize = size;
 
     // 1. 配置 时钟 (DMA)
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+    Utils_RCC_PeriphClock_Enable(RCC_AHBPeriph_DMA1);
 
     // 2. 配置 DMA
     DMA_InitTypeDef DMA_InitStructure;

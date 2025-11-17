@@ -1,11 +1,12 @@
 // AB相编码器 (编码器接口)
 
+#include "bsp_utils.h"
 #include "encoder_sensor.h"
 
 void EncoderSensor_Init(void)
 {
     // 1. 开启时钟
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    Utils_RCC_PeriphClock_Enable(RCC_APB2Periph_GPIOB);
 
     // 2. 配置 GPIO
     GPIO_InitTypeDef GPIO_InitStructure;

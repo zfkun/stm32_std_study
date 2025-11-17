@@ -1,5 +1,6 @@
 // 定时器计数器
 
+#include "bsp_utils.h"
 #include "counter_sensor.h"
 
 static volatile uint32_t _count;
@@ -7,8 +8,7 @@ static volatile uint32_t _count;
 void CounterSensor_Init(void)
 {
     // 1. 配置 时钟
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE); // EXTI外部中断线需要开启AFIO时钟
+    Utils_RCC_PeriphClock_Enable(RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO); // EXTI外部中断线需要开启AFIO时钟
 
     // 2. 配置 GPIO
     GPIO_InitTypeDef GPIO_InitStructure;

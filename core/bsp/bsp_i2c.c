@@ -1,26 +1,7 @@
 // I2C (软件)
 
-#include "stm32f10x.h"                  // Device header
-
 #include "bsp_delay.h"
 #include "bsp_i2c.h"
-
-#ifndef I2C_SCL_PORT
-#define I2C_SCL_PORT GPIOB
-#endif
-
-#ifndef I2C_SDA_PORT
-#define I2C_SDA_PORT GPIOB
-#endif
-
-#ifndef I2C_SCL_PIN
-#define I2C_SCL_PIN GPIO_Pin_10
-#endif
-
-#ifndef I2C_SDA_PIN
-#define I2C_SDA_PIN GPIO_Pin_11
-#endif
-
 
 /*引脚配置层*/
 
@@ -33,7 +14,9 @@
 void MyI2C_W_SCL(uint8_t BitValue)
 {
 	GPIO_WriteBit(I2C_SCL_PORT, I2C_SCL_PIN, (BitAction)BitValue);  //根据BitValue，设置SCL引脚的电平
+#ifndef I2C_DELAY_DISABLE
 	Delay_us(10);                                                   //延时10us，防止时序频率超过要求
+#endif
 }
 
 /**
@@ -45,7 +28,9 @@ void MyI2C_W_SCL(uint8_t BitValue)
 void MyI2C_W_SDA(uint8_t BitValue)
 {
 	GPIO_WriteBit(I2C_SDA_PORT, I2C_SDA_PIN, (BitAction)BitValue);  //根据BitValue，设置SDA引脚的电平，BitValue要实现非0即1的特性
+#ifndef I2C_DELAY_DISABLE
 	Delay_us(10);                                                   //延时10us，防止时序频率超过要求
+#endif
 }
 
 /**
@@ -58,7 +43,9 @@ uint8_t MyI2C_R_SDA(void)
 {
 	uint8_t BitValue;
 	BitValue = GPIO_ReadInputDataBit(I2C_SDA_PORT, I2C_SDA_PIN);    //读取SDA电平
+#ifndef I2C_DELAY_DISABLE
 	Delay_us(10);                                                   //延时10us，防止时序频率超过要求
+#endif
 	return BitValue;                                                //返回SDA电平
 }
 

@@ -3,6 +3,17 @@
 
 #include "stm32f10x.h"
 
+#define SERIAL_USART                USART1
+#define SERIAL_USART_IRQ_HANDLER    USART1_IRQHandler
+
+#define SERIAL_BAUDRATE             115200
+
+#define SERIAL_TX_PORT              GPIOA
+#define SERIAL_TX_PIN               GPIO_Pin_9
+
+#define SERIAL_RX_PORT              GPIOA
+#define SERIAL_RX_PIN               GPIO_Pin_10
+
 void Serial_Init(void);
 
 void Serial_SendByte(uint8_t);

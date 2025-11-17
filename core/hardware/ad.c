@@ -1,5 +1,6 @@
 // ADC
 
+#include "bsp_utils.h"
 #include "ad.h"
 
 // 一些基本概念和公式
@@ -51,7 +52,7 @@ void AD_Init(void)
     // - 非扫描模式
 
     // 1. 配置 时钟 (ADC, GPIO)
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1 | RCC_APB2Periph_GPIOA, ENABLE);
+    Utils_RCC_PeriphClock_Enable(RCC_APB2Periph_ADC1 | RCC_APB2Periph_GPIOA);
     RCC_ADCCLKConfig(RCC_PCLK2_Div6); // ADC时钟为 APB2(PCLK2)时钟 / 6 = 12MHz
     
     // 2. 配置 GPIO

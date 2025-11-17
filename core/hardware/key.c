@@ -1,6 +1,19 @@
-#include "stm32f10x.h"                  // Device header
+// 按键检测
+
 #include "bsp_delay.h"
+#include "bsp_utils.h"
 #include "key.h"
+
+#define KEY_1_PORT				GPIOB
+#define KEY_1_PIN				GPIO_Pin_14
+
+#define KEY_2_PORT				GPIOB
+#define KEY_2_PIN				GPIO_Pin_15
+
+#define KEY_SWITCH_TICK_COUNT	20
+
+static volatile uint8_t _keyNum = 0;
+
 
 /**
   * 函    数：按键初始化
@@ -9,36 +22,53 @@
   */
 void Key_Init(void)
 {
-	// 使能GPIOB时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+	// 1. 配置时钟
+	Utils_GPIO_CLOCK_Enable(KEY_1_PORT);
+	Utils_GPIO_CLOCK_Enable(KEY_2_PORT);
 	
-	// 配置PA0为上拉输入
+	// 2. 配置GPIO
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
+	GPIO_InitStructure.GPIO_Pin = KEY_1_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_Init(KEY_1_PORT, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = KEY_2_PIN;
+	GPIO_Init(KEY_2_PORT, &GPIO_InitStructure);
 }
 
-/**
-  * 函    数：按键获取键码
-  * 参    数：无
-  * 返 回 值：按下按键的键码值，范围：0~2，返回0代表没有按键按下
-  * 注意事项：此函数是阻塞式操作，当按键按住不放时，函数会卡住，直到按键松手
-  */
+
 uint8_t Key_GetNum(void)
 {
-	// 定义变量，默认键码值为0
-	uint8_t KeyNum = 0;
-	
-	// 读PA0输入寄存器的状态，如果为0，则代表按键1按下
-	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_14) == 0)
-	{
-		Delay_ms(20);											// 延时消抖
-		while (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_14) == 0);	// 等待按键松手
-		Delay_ms(20);											// 延时消抖
-		KeyNum = 1;												// 置键码为1
+	uint8_t k = 0;
+
+	if (_keyNum) {
+		k = _keyNum;
+		_keyNum = 0;
 	}
-	
-	return KeyNum;
+
+	return k;
+}
+
+uint8_t Key_GetState(void) {
+	if (GPIO_ReadInputDataBit(KEY_1_PORT, KEY_1_PIN) == 0) return 1;
+	if (GPIO_ReadInputDataBit(KEY_2_PORT, KEY_2_PIN) == 0) return 2;
+	return 0;
+}
+
+void Key_Tick(void) {
+	static uint8_t count = 0;
+	static uint8_t currentState, prevState;
+
+	count++;
+	if (count >= KEY_SWITCH_TICK_COUNT) {
+		count = 0;
+
+		prevState = currentState;
+		currentState = Key_GetState();
+
+		if (currentState == 0 && prevState != 0) {
+			_keyNum = prevState;
+		}
+	}
 }
