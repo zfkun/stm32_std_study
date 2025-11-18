@@ -250,6 +250,32 @@ static void _readArrayReg(uint8_t StartRegAddress, uint8_t *Data, uint16_t lengt
 }
 
 /**
+ * 配置 MPU6050
+ */
+static void _initConfig(MPU6050_InitTypeDef *InitStruct) {
+    assert_param(IS_MPU6050_PWR_MGMT1_CLOCK(InitStruct->PWR1_Clock));
+    assert_param(IS_MPU6050_PWR_MGMT1_MODE(InitStruct->PWR1_Mode));
+    assert_param(IS_MPU6050_PWR_MGMT2_LP_WAKE(InitStruct.PWR2_LP_Wake));
+    assert_param(IS_MPU6050_PWR_MGMT2_MODE(InitStruct->PWR2_Mode));
+    assert_param(InitStruct->SMPRT_DIV > 0 && InitStruct->SMPRT_DIV < 256);
+    assert_param(IS_MPU6050_EXTSYNC(InitStruct->ExtSync));
+    assert_param(IS_MPU6050_FILTER(InitStruct->Filter));
+    assert_param(IS_MPU6050_GYRO_FULLSCALE(InitStruct->GYRO_FullScale));
+    assert_param(IS_MPU6050_ACCEL_FULLSCALE(InitStruct->ACCEL_FullScale));
+    assert_param(IS_MPU6050_GYRO_SELFTEST(InitStruct->GYRO_SelfTest));
+    assert_param(IS_MPU6050_ACCEL_SELFTEST(InitStruct->ACCEL_SelfTest));
+    assert_param(IS_MPU6050_FIFO(InitStruct->FIFO));
+
+    _writeReg(MPU6050_PWR_MGMT_1, InitStruct->PWR1_Mode | InitStruct->PWR1_Clock);
+	_writeReg(MPU6050_PWR_MGMT_2, InitStruct->PWR2_LP_Wake | InitStruct->PWR2_Mode);
+	_writeReg(MPU6050_SMPLRT_DIV, InitStruct->SMPRT_DIV);
+	_writeReg(MPU6050_CONFIG, InitStruct->ExtSync | InitStruct->Filter);
+	_writeReg(MPU6050_GYRO_CONFIG, InitStruct->GYRO_SelfTest | InitStruct->GYRO_FullScale);
+	_writeReg(MPU6050_ACCEL_CONFIG, InitStruct->ACCEL_SelfTest | InitStruct->ACCEL_FullScale);
+    if (InitStruct->FIFO > 0) _writeReg(MPU6050_FIFO_EN, InitStruct->FIFO);
+}
+
+/**
   * 函    数：MPU6050初始化
   * 参    数：无
   * 返 回 值：无
@@ -262,13 +288,21 @@ void MPU6050_Init(void)
 	MyI2C_Init();									//先初始化底层的I2C
 #endif
 
-	/*MPU6050寄存器初始化，需要对照MPU6050手册的寄存器描述配置，此处仅配置了部分重要的寄存器*/
-	_writeReg(MPU6050_PWR_MGMT_1, 0x01);    //电源管理寄存器1，取消睡眠模式，选择时钟源为X轴陀螺仪
-	_writeReg(MPU6050_PWR_MGMT_2, 0x00);    //电源管理寄存器2，保持默认值0，所有轴均不待机
-	_writeReg(MPU6050_SMPLRT_DIV, 0x09);    //采样率分频寄存器，配置采样率 (10分频)
-	_writeReg(MPU6050_CONFIG, 0x06);        //配置寄存器，配置DLPF (不启用外部同步00000, 滤波最平滑110)
-	_writeReg(MPU6050_GYRO_CONFIG, 0x18);	//陀螺仪配置寄存器，选择满量程为±2000°/s (000, 量程满11, 000)
-	_writeReg(MPU6050_ACCEL_CONFIG, 0x18);	//加速度计配置寄存器，选择满量程为±16g (自测000, 量程满11, 滤波无000)
+    // 初始化配置
+    MPU6050_InitTypeDef MPU6050_InitStruct;
+    MPU6050_InitStruct.PWR1_Clock = MPU6050_PWR_MGMT1_Clock_GX;             // 时钟源为X轴陀螺仪
+    MPU6050_InitStruct.PWR1_Mode = 0;                                       // 不休眠, 不循环, 不禁用温度传感器, 不复位
+    MPU6050_InitStruct.PWR2_LP_Wake = MPU6050_PWR_MGMT2_LP_WAKE_1_25Hz;     // 唤醒频率 1.25Hz (仅加速度计低功耗模式下有效)
+    MPU6050_InitStruct.PWR2_Mode = 0;                                       // 禁用低功耗模式
+    MPU6050_InitStruct.SMPRT_DIV = 10 - 1;                                  // 10分频采样
+    MPU6050_InitStruct.ExtSync = MPU6050_ExtSync_Disable;                   // 禁用外部同步
+    MPU6050_InitStruct.Filter = MPU6050_Filter_5Hz;                         // 低通滤波 (较平滑)
+    MPU6050_InitStruct.GYRO_SelfTest = 0;                                   // 禁用陀螺仪自测
+    MPU6050_InitStruct.GYRO_FullScale = MPU6050_GYRO_FullScale_2000dps;     // 陀螺仪满量程
+    MPU6050_InitStruct.ACCEL_SelfTest = 0;                                  // 禁用加速度计自测
+    MPU6050_InitStruct.ACCEL_FullScale = MPU6050_ACCEL_FullScale_16g;       // 加速度计满量程
+
+    _initConfig(&MPU6050_InitStruct);
 }
 
 /**
@@ -324,11 +358,11 @@ void MPU6050_GetData(MPU6050_Data_t *Data)
     uint8_t datas[14];
     _readArrayReg(MPU6050_ACCEL_XOUT_H, datas, 14);
 
-    Data->AccX = (datas[0] << 8) | datas[1];
-    Data->AccY = (datas[2] << 8) | datas[3];
-    Data->AccZ = (datas[4] << 8) | datas[5];
-    Data->Temp = (datas[6] << 8) | datas[7];
-    Data->GyroX = (datas[8] << 8) | datas[9];
-    Data->GyroY = (datas[10] << 8) | datas[11];
-    Data->GyroZ = (datas[12] << 8) | datas[13];
+    Data->AccX = (((uint16_t)datas[0]) << 8) | datas[1];
+    Data->AccY = (((uint16_t)datas[2]) << 8) | datas[3];
+    Data->AccZ = (((uint16_t)datas[4]) << 8) | datas[5];
+    Data->Temp = (((uint16_t)datas[6]) << 8) | datas[7];
+    Data->GyroX = (((uint16_t)datas[8]) << 8) | datas[9];
+    Data->GyroY = (((uint16_t)datas[10]) << 8) | datas[11];
+    Data->GyroZ = (((uint16_t)datas[12]) << 8) | datas[13];
 }
