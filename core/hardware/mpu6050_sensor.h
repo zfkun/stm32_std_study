@@ -5,6 +5,25 @@
 
 // #define MPU6050_I2C_HW 1	// 使用硬件I2C
 
+// TODO: 修正算法
+const static float SMPLRT_DT = 0.01; // 采样时间间隔(s)
+
+// 原始寄存器值转摄氏度的乘法系数
+// 公式: 温度（摄氏度）=（带符号的 TEMP_OUT 寄存器值）/ 温度传感器灵敏度系数 + 温度传感器偏移量
+//   - 温度传感器灵敏度系数: 340 (LSB/℃)
+//   - 温度传感器偏移量: 36.53
+// 所以, 转换为乘法的乘数 = 1 / 340 = 0.0029411764705882353
+const static float TEMP_MUL_FACTOR = 0.002941f;
+
+// 零飘补偿相关
+const static float YAW_FACTOR = 20.0f;
+const static float YAW_OFFSET = 0.01575f;
+
+// 加速度量程比例因子
+static float accelFactor = 0.0f;
+// 角速度量程比例因子
+static float gyroFactor = 0.0f;
+
 
 // MPU6050 外部帧同步(FSYNC)引脚采样
 typedef enum
@@ -114,10 +133,10 @@ typedef enum
 // MPU6050 电源管理1 - 模式 (可并行)
 // - 在禁用 SLEEP 的同时将 CYCLE 设置为1 时，将进入 睡眠/唤醒 的循环模式, 采集频率为 LP_Wake 的设定值
 // - 启用复位会把所有内部寄存器重置为默认值。复位完成后，该位自动清零
-#define MPU6050_PWR_MGMT1_MODE_TEMP_DISABLE		0x80,		// 禁用温度传感器
-#define MPU6050_PWR_MGMT1_MODE_CYCLE_ENABLE		0x20,		// 启用循环模式 (禁用休眠才有效)
-#define MPU6050_PWR_MGMT1_MODE_SLEEP_ENABLE		0x40,		// 启用休眠模式
-#define MPU6050_PWR_MGMT1_MODE_DEVICE_RESET		0x80,		// 启用设备复位
+#define MPU6050_PWR_MGMT1_MODE_TEMP_DISABLE		0x80		// 禁用温度传感器
+#define MPU6050_PWR_MGMT1_MODE_CYCLE_ENABLE		0x20		// 启用循环模式 (禁用休眠才有效)
+#define MPU6050_PWR_MGMT1_MODE_SLEEP_ENABLE		0x40		// 启用休眠模式
+#define MPU6050_PWR_MGMT1_MODE_DEVICE_RESET		0x80		// 启用设备复位
 #define IS_MPU6050_PWR_MGMT1_MODE(MODE) (((MODE) & ~(MPU6050_PWR_MGMT1_TEMP_DISABLE | \
     MPU6050_PWR_MGMT1_CYCLE_ENABLE | MPU6050_PWR_MGMT1_SLEEP_ENABLE | MPU6050_PWR_MGMT1_DEVICE_RESET)) == 0)
 
@@ -167,20 +186,38 @@ typedef struct
 	MPU6050_PWR_MGMT2_LP_Wake_TypeDef PWR2_LP_Wake;		// 唤醒频率 (仅加速度计低功耗模式下)
 } MPU6050_InitTypeDef;
 
-
+// 原始传感器数据
 typedef struct
 {
-	int16_t AccX;
-	int16_t AccY;
-	int16_t AccZ;
-    int16_t Temp;
-	int16_t GyroX;
-	int16_t GyroY;
-	int16_t GyroZ;
+	int16_t ax;		// 加速度计X轴 (原始数据)
+	int16_t ay;		// 加速度计Y轴 (原始数据)
+	int16_t az;		// 加速度计Z轴(原始数据)
+    int16_t temp;	// 温度数据 (原始数据)
+	int16_t gx;		// 陀螺仪X轴 (原始数据)
+	int16_t gy;		// 陀螺仪Y轴 (原始数据)
+	int16_t gz;		// 陀螺仪Z轴 (原始数据)
+} MPU6050_RawData_t;
+
+// 欧拉角 数据
+typedef struct
+{
+	float yaw;		// 偏航角 (欧拉角) Z轴 (左右旋转)
+	float roll;		// 翻滚角 (欧拉角) Y轴 (左右倾斜)
+	float pitch;	// 俯仰角 (欧拉角) X轴 (抬头/低头)
+} MPU6050_EulerData_t;
+
+// 完整数据
+typedef struct
+{
+	MPU6050_RawData_t raw;
+	MPU6050_EulerData_t euler;
 } MPU6050_Data_t;
 
 void MPU6050_Init(void);
 uint8_t MPU6050_GetID(void);
-void MPU6050_GetData(MPU6050_Data_t *Data);
+void MPU6050_GetRaw(MPU6050_Data_t *raw);
+void MPU6050_GetEuler(MPU6050_Data_t *euler);
+void MPU6050_GetData(MPU6050_Data_t *data);
+int16_t MPU6050_GetTempture();
 
 #endif

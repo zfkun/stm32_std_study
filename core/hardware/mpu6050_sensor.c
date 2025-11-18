@@ -1,6 +1,8 @@
 // MPU6050 传感器模块 (GY-521)
 // 三轴加速计, 三轴电子陀螺仪, 6DOF角度姿态传感器
 
+#include <math.h>
+#include "bsp_math.h"
 #include "mpu6050_sensor.h"
 #include "mpu6050_sensor_reg.h"
 
@@ -266,6 +268,23 @@ static void _initConfig(MPU6050_InitTypeDef *InitStruct) {
     assert_param(IS_MPU6050_ACCEL_SELFTEST(InitStruct->ACCEL_SelfTest));
     assert_param(IS_MPU6050_FIFO(InitStruct->FIFO));
 
+
+    float temp_scale;
+    
+    //  加速度计量程比例因子计算
+    if (InitStruct->ACCEL_FullScale == MPU6050_ACCEL_FullScale_2g) temp_scale = 16384;
+    else if (InitStruct->ACCEL_FullScale == MPU6050_ACCEL_FullScale_4g) temp_scale = 8192;
+    else if (InitStruct->ACCEL_FullScale == MPU6050_ACCEL_FullScale_8g) temp_scale = 4096;
+    else if (InitStruct->ACCEL_FullScale == MPU6050_ACCEL_FullScale_16g) temp_scale = 2048;
+    accelFactor = 1.0f / temp_scale;
+
+    // 角速度量程比例因子计算
+    if (InitStruct->GYRO_FullScale == MPU6050_GYRO_FullScale_250dps) temp_scale = 131;
+    else if (InitStruct->GYRO_FullScale == MPU6050_GYRO_FullScale_500dps) temp_scale = 65.5;
+    else if (InitStruct->GYRO_FullScale == MPU6050_GYRO_FullScale_1000dps) temp_scale = 32.8;
+    else if (InitStruct->GYRO_FullScale == MPU6050_GYRO_FullScale_2000dps) temp_scale = 16.4;
+    gyroFactor = DEG_1 / temp_scale;
+
     _writeReg(MPU6050_PWR_MGMT_1, InitStruct->PWR1_Mode | InitStruct->PWR1_Clock);
 	_writeReg(MPU6050_PWR_MGMT_2, InitStruct->PWR2_LP_Wake | InitStruct->PWR2_Mode);
 	_writeReg(MPU6050_SMPLRT_DIV, InitStruct->SMPRT_DIV);
@@ -296,7 +315,8 @@ void MPU6050_Init(void)
     MPU6050_InitStruct.PWR2_Mode = 0;                                       // 禁用低功耗模式
     MPU6050_InitStruct.SMPRT_DIV = 10 - 1;                                  // 10分频采样
     MPU6050_InitStruct.ExtSync = MPU6050_ExtSync_Disable;                   // 禁用外部同步
-    MPU6050_InitStruct.Filter = MPU6050_Filter_5Hz;                         // 低通滤波 (较平滑)
+    MPU6050_InitStruct.Filter = MPU6050_Filter_5Hz;                         // 低通滤波 (最平滑)
+    MPU6050_InitStruct.FIFO = 0;                                            // 关闭FIFO
     MPU6050_InitStruct.GYRO_SelfTest = 0;                                   // 禁用陀螺仪自测
     MPU6050_InitStruct.GYRO_FullScale = MPU6050_GYRO_FullScale_2000dps;     // 陀螺仪满量程
     MPU6050_InitStruct.ACCEL_SelfTest = 0;                                  // 禁用加速度计自测
@@ -315,54 +335,66 @@ uint8_t MPU6050_GetID(void)
 	return _readReg(MPU6050_WHO_AM_I);		//返回WHO_AM_I寄存器的值
 }
 
-/**
-  * 函    数：MPU6050获取数据
-  * 参    数：AccX AccY AccZ 加速度计X、Y、Z轴的数据，使用输出参数的形式返回，范围：-32768~32767
-  * 参    数：GyroX GyroY GyroZ 陀螺仪X、Y、Z轴的数据，使用输出参数的形式返回，范围：-32768~32767
-  * 返 回 值：无
-  */
-void MPU6050_GetData(MPU6050_Data_t *Data)
+
+void MPU6050_GetRaw(MPU6050_Data_t *data)
 {
-    // // 1. 逐个读取方式
-	// uint8_t DataH, DataL;                        //定义数据高8位和低8位的变量
-	
-	// DataH = _readReg(MPU6050_ACCEL_XOUT_H);		//读取加速度计X轴的高8位数据
-	// DataL = _readReg(MPU6050_ACCEL_XOUT_L);		//读取加速度计X轴的低8位数据
-	// Data->AccX = (DataH << 8) | DataL;           //数据拼接，通过输出参数返回
-	
-	// DataH = _readReg(MPU6050_ACCEL_YOUT_H);		//读取加速度计Y轴的高8位数据
-	// DataL = _readReg(MPU6050_ACCEL_YOUT_L);		//读取加速度计Y轴的低8位数据
-	// Data->AccY = (DataH << 8) | DataL;           //数据拼接，通过输出参数返回
-	
-	// DataH = _readReg(MPU6050_ACCEL_ZOUT_H);		//读取加速度计Z轴的高8位数据
-	// DataL = _readReg(MPU6050_ACCEL_ZOUT_L);		//读取加速度计Z轴的低8位数据
-	// Data->AccZ = (DataH << 8) | DataL;           //数据拼接，通过输出参数返回
-
-    // DataH = _readReg(MPU6050_TEMP_OUT_H);        //读取温度传感器的高8位数据
-    // DataL = _readReg(MPU6050_TEMP_OUT_L);        //读取温度传感器的低8位数据
-    // Data->Temp = (DataH << 8) | DataL;           //数据拼接，通过输出参数返回
-	
-	// DataH = _readReg(MPU6050_GYRO_XOUT_H);		//读取陀螺仪X轴的高8位数据
-	// DataL = _readReg(MPU6050_GYRO_XOUT_L);		//读取陀螺仪X轴的低8位数据
-	// Data->GyroX = (DataH << 8) | DataL;          //数据拼接，通过输出参数返回
-	
-	// DataH = _readReg(MPU6050_GYRO_YOUT_H);		//读取陀螺仪Y轴的高8位数据
-	// DataL = _readReg(MPU6050_GYRO_YOUT_L);		//读取陀螺仪Y轴的低8位数据
-	// Data->GyroY = (DataH << 8) | DataL;          //数据拼接，通过输出参数返回
-	
-	// DataH = _readReg(MPU6050_GYRO_ZOUT_H);		//读取陀螺仪Z轴的高8位数据
-	// DataL = _readReg(MPU6050_GYRO_ZOUT_L);		//读取陀螺仪Z轴的低8位数据
-	// Data->GyroZ = (DataH << 8) | DataL;          //数据拼接，通过输出参数返回
-
-    // 2. 批量读取方式 (更效率)
     uint8_t datas[14];
     _readArrayReg(MPU6050_ACCEL_XOUT_H, datas, 14);
 
-    Data->AccX = (((uint16_t)datas[0]) << 8) | datas[1];
-    Data->AccY = (((uint16_t)datas[2]) << 8) | datas[3];
-    Data->AccZ = (((uint16_t)datas[4]) << 8) | datas[5];
-    Data->Temp = (((uint16_t)datas[6]) << 8) | datas[7];
-    Data->GyroX = (((uint16_t)datas[8]) << 8) | datas[9];
-    Data->GyroY = (((uint16_t)datas[10]) << 8) | datas[11];
-    Data->GyroZ = (((uint16_t)datas[12]) << 8) | datas[13];
+    data->raw.ax = (((int16_t)datas[0]) << 8) | datas[1];
+    data->raw.ay = (((int16_t)datas[2]) << 8) | datas[3];
+    data->raw.az = (((int16_t)datas[4]) << 8) | datas[5];
+    data->raw.temp = (((int16_t)datas[6]) << 8) | datas[7];
+    data->raw.gx = (((int16_t)datas[8]) << 8) | datas[9];
+    data->raw.gy = (((int16_t)datas[10]) << 8) | datas[11];
+    data->raw.gz = (((int16_t)datas[12]) << 8) | datas[13];
+}
+
+void MPU6050_GetEuler(MPU6050_Data_t *data)
+{
+    float ax, ay, az;
+    float gx, gy, gz;
+
+    ax = data->raw.ax * accelFactor;
+    ay = data->raw.ay * accelFactor;
+    az = data->raw.az * accelFactor;
+
+    gx = data->raw.gx * SMPLRT_DT * gyroFactor;
+    gy = data->raw.gy * SMPLRT_DT * gyroFactor;
+    gz = data->raw.gz * SMPLRT_DT * gyroFactor;
+
+    // 加速度的绝对值
+    float absAcc = sqrt(ax * ax + ay * ay + az * az);
+
+    // 动态调整权重
+    float weight;
+    if (absAcc > 1.2) {
+        weight = 0.8f;  // 快速运动或剧烈振动状态，减小加速度计权重
+    } else {
+        weight = 0.98f; // 正常运动状态，全靠加速度计权重
+    }
+
+    static float roll = 0.0f;
+    static float pitch = 0.0f;
+
+    roll += gy;
+    pitch += gx;
+
+    data->euler.roll = weight * atan2(ay, az) * RAD_1 + (1 - weight) * roll;
+    data->euler.pitch = -(weight * atan2(ax, az) * RAD_1 + (1 - weight) * pitch);
+    data->euler.yaw += gz * YAW_FACTOR + YAW_OFFSET;
+}
+
+void MPU6050_GetData(MPU6050_Data_t *data)
+{
+    MPU6050_GetRaw(data);
+    MPU6050_GetEuler(data);
+}
+
+// 获取温度 (摄氏度)
+int16_t MPU6050_GetTempture()
+{ 
+    uint8_t datas[2];
+    _readArrayReg(MPU6050_TEMP_OUT_H, datas, 2);
+    return (int16_t)((((int16_t)datas[0]) << 8) | datas[1]) * TEMP_MUL_FACTOR + 36.53;
 }
