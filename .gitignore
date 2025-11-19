@@ -5,3 +5,8 @@
 *.bin
 *.hex
 *.out
+
+/project/MDK(V5)/Listings/*.map
+/project/MDK(V5)/project.uvguix*
+/project/MDK(V5)/Objects/*
+!important /project/MDK(V5)/Objects/.gitkeep

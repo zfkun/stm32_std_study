@@ -4,6 +4,7 @@
 #include "stm32f10x.h"                  // Device header
 
 // #define MPU6050_I2C_HW 1	// 使用硬件I2C
+#define MPU6050_SLAVE_ADDR      (0x68 << 1)		// 从机地址 (AD0 = 0)
 
 // TODO: 修正算法
 const static float SMPLRT_DT = 0.01; // 采样时间间隔(s)

@@ -177,27 +177,23 @@ static inline void _update(void) {
 	_count++;
 }
 
-// void TIM2_IRQHandler(void)
-// {
-// 	if (TIM_GetITStatus(BSP_TIMER_TIM, TIM_IT_Update) == SET)
-// 	{
-// 		_update();
-
-// 		TIM_ClearITPendingBit(BSP_TIMER_TIM, TIM_IT_Update);
-// 	}
-// }
-
 void TIM1_UP_IRQHandler(void)
 {
 	if (TIM_GetITStatus(BSP_TIMER_TIM, TIM_IT_Update) == SET)
 	{
+		TIM_ClearITPendingBit(BSP_TIMER_TIM, TIM_IT_Update);
+		
 		_update();
 
 		if (onTimerTick != NULL) {
 			onTimerTick();
 		}
 
-		TIM_ClearITPendingBit(BSP_TIMER_TIM, TIM_IT_Update);
+		// 防止中断内运行逻辑耗时过长, 造成中断触发堆叠
+		if (TIM_GetITStatus(BSP_TIMER_TIM, TIM_IT_Update) == SET)
+		{
+			TIM_ClearITPendingBit(BSP_TIMER_TIM, TIM_IT_Update);
+		}
 
 		if (afterTimerTick != NULL) {
 			afterTimerTick();

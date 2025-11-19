@@ -37,36 +37,14 @@ uint16_t timer_count = 0;
 
 MPU6050_Data_t mpu = {0};
 
-uint8_t mpu_ready = 0;
 void onTimerUpdate(void) {
 	Key_Tick();
-
-	mpu_ready = 1;  // 更新 MPU6050 读取标志
+	MPU6050_GetData(&mpu);
 }
 
 void afterTimerUpdate(void) {
 	timer_count = Timer_GetTIMCount(); // 调试查看中断耗时
 }
-
-// void TIM1_UP_IRQHandler(void)
-// {
-// 	if (TIM_GetITStatus(TIM1, TIM_IT_Update) == SET)
-// 	{
-// 		// TIM_ClearITPendingBit(TIM1, TIM_IT_Update);			// 先清除中断标志位, 但要注意处理重叠问题
-
-// 		mpu_ready = 1;
-
-// 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);
-
-// 		// // 检查是否发生重叠
-// 		// if (TIM_GetITStatus(TIM1, TIM_IT_Update) == SET) {
-// 		// 	timerRepeatFlag = 1;
-// 		// 	TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		// 发生重叠, 立即清除中断标志位
-// 		// }
-
-// 		timer_count = Timer_GetTIMCount();
-// 	}
-// }
 
 
 int main(void)
@@ -75,9 +53,9 @@ int main(void)
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 	Key_Init();
+
 	Timer_SetOnTimerTick(onTimerUpdate);
 	Timer_SetAfterTimerTick(afterTimerUpdate);
-
 	Timer_Init();
 
 	// LED_Init();
@@ -104,10 +82,13 @@ int main(void)
 	// MyI2C_Stop();
 	// printf("MPU6050 ACK: %d\r\n", ack);
 	// OLED_ShowNum(3, 1, ack, 3);
-	uint8_t mpuID = MPU6050_GetID();
-	float mpuTempture = 0.0f;
-	// OLED_ShowString(1, 1, "MPU6050:");
-	// OLED_ShowHexNum(1, 9, mpuID, 2);
+	// uint8_t mpuID = MPU6050_GetID();
+	// float mpuTempture = 0.0f;
+	// OLED_Printf(1, 1, OLED_6X8, "MPU6050: %d = %d", mpuID, MPU6050_SLAVE_ADDR >> 1);
+	// if (mpuID == MPU6050_SLAVE_ADDR >> 1) {
+	// 	mpu_ready = 1;
+	// }
+	// OLED_ShowHexNum(1, 9, mpuID, 2, OLED_6X8);
 
 	// Servo_SetAngle(90)
 	
@@ -175,8 +156,8 @@ int main(void)
 	
 	// AS5600_Data_t angle;
 
-	OLED_Printf(0, 0, OLED_6X8, "Accel");
-	OLED_Printf((4 + 5) * OLED_6X8, 0, OLED_6X8, "Gyro");
+	// OLED_Printf(0, 0, OLED_6X8, "Accel");
+	// OLED_Printf((4 + 5) * OLED_6X8, 0, OLED_6X8, "Gyro");
 
 	while(1)
 	{
@@ -307,28 +288,24 @@ int main(void)
 		// OLED_Printf(0, 56, OLED_6X8, "Key: %d", keyClickTotal);
 		// OLED_Update();
 
-		if (mpuID > 0) {
-			if (mpu_ready) {
-				mpu_ready = 0;
-				MPU6050_GetData(&mpu);
-				mpuTempture = MPU6050_GetTempture();
-			}
+		// if (mpu_ready > 0) {
+			// if (mpu_ready) {
+			// 	mpu_ready = 0;
+			// 	MPU6050_GetData(&mpu);
+			// 	mpuTempture = MPU6050_GetTempture();
+			// }
 
-			OLED_Printf(0, 8, OLED_6X8, "x: %+d", mpu.raw.ax);
-			OLED_Printf(0, 16, OLED_6X8, "y: %+d", mpu.raw.ay);
-			OLED_Printf(0, 24, OLED_6X8, "z: %+d", mpu.raw.az);
-			OLED_Printf((4 + 5) * OLED_6X8, 8, OLED_6X8, "x: %+d", mpu.raw.gx);
-			OLED_Printf((4 + 5) * OLED_6X8, 16, OLED_6X8, "y: %+d", mpu.raw.gy);
-			OLED_Printf((4 + 5) * OLED_6X8, 24, OLED_6X8, "z: %+d", mpu.raw.gz);
-			OLED_Printf(0, 32, OLED_6X8, "Temp: %+d . %+.2f", mpu.raw.temp, mpuTempture);
-			OLED_Printf(0, 40, OLED_6X8, "yaw: %+f", mpu.euler.yaw);
-			OLED_Printf(0, 48, OLED_6X8, "roll: %+f", mpu.euler.roll);
-			OLED_Printf(0, 56, OLED_6X8, "pitch: %+f", mpu.euler.pitch);
-		}
+			OLED_Printf(0, 0, OLED_6X8, "A: %+d %+d %+d", mpu.raw.ax, mpu.raw.ay, mpu.raw.az);
+			OLED_Printf(0, 8, OLED_6X8, "G: %+d %+d %+d", mpu.raw.gx, mpu.raw.gy, mpu.raw.gz);
+			// OLED_Printf(0, 32, OLED_6X8, "Temp: %+d . %+.2f", mpu.raw.temp, mpuTempture);
+			OLED_Printf(0, 24, OLED_6X8, "  yaw: %+.3f", mpu.euler.yaw);
+			OLED_Printf(0, 32, OLED_6X8, " roll: %+.3f", mpu.euler.roll);
+			OLED_Printf(0, 40, OLED_6X8, "pitch: %+.3f", mpu.euler.pitch);
+		// }
 
-		printf("%+.3f, %+.3f, %+.3f\r\n", mpu.euler.yaw, mpu.euler.roll, mpu.euler.pitch);
+		// printf("%+.3f, %+.3f, %+.3f\r\n", mpu.euler.yaw, mpu.euler.roll, mpu.euler.pitch);
 		// printf("Timer: %d\r\n", timer_count);
-		// OLED_Printf(0, 56, OLED_6X8, "Timer: %05d", timer_count);
+		OLED_Printf(0, 56, OLED_6X8, "Timer TTL: %dus", timer_count);
 		OLED_Update();
 
 
