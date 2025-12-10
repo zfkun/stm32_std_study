@@ -1,5 +1,8 @@
-#ifndef __MPU6050_SENSOR_REG_H
-#define __MPU6050_SENSOR_REG_H
+#ifndef __MPU6050_REG_H
+#define __MPU6050_REG_H
+
+// 从机地址 (AD0 = 0, 即 00110 1000 | 0)
+#define MPU6050_SLAVE_ADDR      (0x68 << 1)     // 已位移
 
 #define	MPU6050_SMPLRT_DIV		0x19
 #define	MPU6050_CONFIG			0x1A

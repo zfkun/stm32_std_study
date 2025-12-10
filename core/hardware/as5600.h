@@ -1,5 +1,5 @@
-#ifndef __AS5600_SENSOR_H__
-#define __AS5600_SENSOR_H__
+#ifndef __AS5600_H__
+#define __AS5600_H__
 
 #include "stm32f10x.h"
 

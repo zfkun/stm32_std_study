@@ -1,5 +1,6 @@
 #include "stm32f10x.h"                  // Device header
 #include <stdio.h>
+#include <math.h>
 
 // 板级功能
 #include "bsp_delay.h"
@@ -10,17 +11,18 @@
 // 外设模块
 #include "key.h"
 // #include "led.h"
-#include "oled.h"
+// #include "oled.h"
 #include "serial.h"
+// #include "bt_serial.h"
 // #include "counter_sensor.h"
 // #include "encoder_sensor.h"
-#include "mpu6050_sensor.h"
-#include "as5600_sensor.h"
+// #include "mpu6050_sensor.h"
+// #include "as5600_sensor.h"
 // #include "pwm.h"
 // #include "servo.h"
 // #include "motor.h"
 // #include "ic.h"
-// #include "ad.h"
+#include "ad.h"
 // #include "dma.h"
 
 uint8_t keyNum = 0;
@@ -33,13 +35,17 @@ uint16_t keyClickTotal = 0;
 // uint8_t dataB[] = {0, 0, 0, 0};
 
 
+float angleAcc = 0.0f; // 俯仰角 (加速度计测量)
+
 uint16_t timer_count = 0;
 
-MPU6050_Data_t mpu = {0};
+// MPU6050_Data_t mpu = {0};
 
 void onTimerUpdate(void) {
 	Key_Tick();
-	MPU6050_GetData(&mpu);
+	// MPU6050_GetData(&mpu);
+
+	// angleAcc = atan2(mpu.raw.ax, mpu.raw.az) / 3.14159 * 180; // 计算俯仰角 (加速度计测量)
 }
 
 void afterTimerUpdate(void) {
@@ -52,14 +58,15 @@ int main(void)
 	// 配置 NVIC 优先级分组 (全局只需配置一次)
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
-	Key_Init();
-
 	Timer_SetOnTimerTick(onTimerUpdate);
 	Timer_SetAfterTimerTick(afterTimerUpdate);
 	Timer_Init();
 
+	Serial_Init();
+	// BTSerial_Init();
 	// LED_Init();
-	OLED_Init();
+	// OLED_Init();
+	// Key_Init();
 	// MyRTC_Init();
 	// CounterSensor_Init();
 	// EncoderSensor_Init();
@@ -67,10 +74,9 @@ int main(void)
 	// Servo_Init();
 	// Motor_Init();
 	// IC_Init();
-	// AD_Init();
-	Serial_Init();
+	AD_Init();
 	// MyI2C_Init();
-	MPU6050_Init();
+	// MPU6050_Init();
 	// AS5600_Init();
 
 	// printf("BKP:%x\r\n", BKP_ReadBackupRegister(BKP_DR1));
@@ -295,18 +301,26 @@ int main(void)
 			// 	mpuTempture = MPU6050_GetTempture();
 			// }
 
-			OLED_Printf(0, 0, OLED_6X8, "A: %+d %+d %+d", mpu.raw.ax, mpu.raw.ay, mpu.raw.az);
-			OLED_Printf(0, 8, OLED_6X8, "G: %+d %+d %+d", mpu.raw.gx, mpu.raw.gy, mpu.raw.gz);
-			// OLED_Printf(0, 32, OLED_6X8, "Temp: %+d . %+.2f", mpu.raw.temp, mpuTempture);
-			OLED_Printf(0, 24, OLED_6X8, "  yaw: %+.3f", mpu.euler.yaw);
-			OLED_Printf(0, 32, OLED_6X8, " roll: %+.3f", mpu.euler.roll);
-			OLED_Printf(0, 40, OLED_6X8, "pitch: %+.3f", mpu.euler.pitch);
+			// OLED_Printf(0, 0, OLED_6X8, "A: %+d %+d %+d", mpu.raw.ax, mpu.raw.ay, mpu.raw.az);
+			// OLED_Printf(0, 8, OLED_6X8, "G: %+d %+d %+d", mpu.raw.gx, mpu.raw.gy, mpu.raw.gz);
+			// // OLED_Printf(0, 32, OLED_6X8, "Temp: %+d . %+.2f", mpu.raw.temp, mpuTempture);
+			// OLED_Printf(0, 24, OLED_6X8, "  yaw: %+.3f", mpu.euler.yaw);
+			// OLED_Printf(0, 32, OLED_6X8, " roll: %+.3f", mpu.euler.roll);
+			// OLED_Printf(0, 40, OLED_6X8, "pitch: %+.3f", mpu.euler.pitch);
 		// }
 
 		// printf("%+.3f, %+.3f, %+.3f\r\n", mpu.euler.yaw, mpu.euler.roll, mpu.euler.pitch);
 		// printf("Timer: %d\r\n", timer_count);
-		OLED_Printf(0, 56, OLED_6X8, "Timer TTL: %dus", timer_count);
-		OLED_Update();
+		// OLED_Printf(0, 48, OLED_6X8, "AccAngle: %f", angleAcc);
+		// OLED_Printf(0, 56, OLED_6X8, "Timer TTL: %dus", timer_count);
+		// OLED_Update();
+
+		// BTSerial_Printf("[plot,%f]", angleAcc);
+
+		// if (BTSerial_GetRxFlag() == 1) {
+		// 	OLED_Printf(0, 48, OLED_6X8, "BT: %s", BTSerial_GetRxData());
+		// 	OLED_Update();
+		// }
 
 
 
@@ -335,6 +349,7 @@ int main(void)
 		// OLED_ShowNum(3, 6, AD_GetValueWithChannel(ADC_Channel_2), 4);
 		// OLED_ShowString(4, 1, "ADC3:");
 		// OLED_ShowNum(4, 6, AD_GetValueWithChannel(ADC_Channel_3), 4);
+		// printf("ADC0: %d, ADC1: %d\r\n", AD_GetValueWithChannel(ADC_Channel_0), AD_GetValueWithChannel(ADC_Channel_1));
 
 		// OLED_ShowString(4, 1, "Volate:    V");
 		// char volateString[6];

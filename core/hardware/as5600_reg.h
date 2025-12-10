@@ -1,5 +1,5 @@
-#ifndef __AS5600_SENSOR_REG_H
-#define __AS5600_SENSOR_REG_H
+#ifndef __AS5600_REG_H
+#define __AS5600_REG_H
 
 #define AS5600_SLAVE_ADDR       0x36 << 1   // 从机地址 (7位地址, 已移位)
 

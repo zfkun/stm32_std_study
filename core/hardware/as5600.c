@@ -7,8 +7,8 @@
 //          - 5V工作模式: 0 ~ 255, 最佳取值 128
 //          - 3.3V工作模式: 0 ~ 128, 最佳取值 64
 //
-#include "as5600_sensor.h"
-#include "as5600_sensor_reg.h"
+#include "as5600.h"
+#include "as5600_reg.h"
 
 #ifdef AS5600_I2C_HW
 #include "bsp_i2c_hw.h"

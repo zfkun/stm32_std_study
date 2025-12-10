@@ -1,7 +1,7 @@
 // AB相编码器 (编码器接口)
 
 #include "bsp_utils.h"
-#include "encoder_sensor.h"
+#include "encoder.h"
 
 void EncoderSensor_Init(void)
 {

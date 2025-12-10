@@ -1,13 +1,13 @@
-#ifndef __MPU6050_SENSOR_H__
-#define __MPU6050_SENSOR_H__
+#ifndef __MPU6050_H__
+#define __MPU6050_H__
 
-#include "stm32f10x.h"                  // Device header
+#include "stm32f10x.h"
 
-// #define MPU6050_I2C_HW 1	// 使用硬件I2C
-#define MPU6050_SLAVE_ADDR      (0x68 << 1)		// 从机地址 (AD0 = 0)
+// #define MPU6050_I2C_HW								// 使用硬件I2C
+#define MPU6050_COMPLEMENTARY_FILTER_ENABLE			// 启用互补滤波
+// #define MPU6050_COMPLEMENTARY_FILTER_DYNAMIC_WEIGHT	// 启用互补滤波动态权重
 
-// TODO: 修正算法
-const static float SMPLRT_DT = 0.01; // 采样时间间隔(s)
+const static float FILTER_WEIGHT = 0.001; 			// 互补滤波权重 (0 ~ 1, 取值尽可能小)
 
 // 原始寄存器值转摄氏度的乘法系数
 // 公式: 温度（摄氏度）=（带符号的 TEMP_OUT 寄存器值）/ 温度传感器灵敏度系数 + 温度传感器偏移量
@@ -17,8 +17,14 @@ const static float SMPLRT_DT = 0.01; // 采样时间间隔(s)
 const static float TEMP_MUL_FACTOR = 0.002941f;
 
 // 零飘补偿相关
-const static float YAW_FACTOR = 20.0f;
-const static float YAW_OFFSET = 0.01575f;
+const static float YAW_GY_OFFSET = -4.0f;		// 陀螺仪Y轴零漂补偿(需按raw的实际情况调整)
+const static float YAW_GX_OFFSET = 0.0f;		// 陀螺仪X轴零漂补偿(需按raw的实际情况调整)
+const static float YAW_GZ_FACTOR = 20.0f;
+const static float YAW_GZ_OFFSET = 0.0f;
+
+// 零点校正
+const static float EULER_AY_OFFSET = 2;		// 加速度计y轴零点校准(需按pitchAcc的计算值实际情况调整)
+const static float EULER_AX_OFFSET = 0;		// 加速度计x轴零点校准(需按rollAcc的计算值实际情况调整)
 
 // 加速度量程比例因子
 static float accelFactor = 0.0f;
@@ -43,15 +49,57 @@ typedef enum
 	((EXTSYNC) == MPU6050_ExtSync_AccX) || ((EXTSYNC) == MPU6050_ExtSync_AccY) || ((EXTSYNC) == MPU6050_ExtSync_AccZ))
 
 // MPU6050 数字低通滤波(DLPF)
+//
+// 配置关系表
+//
+// |	DLPF_CFG	|			加速度计			|						陀螺仪			       |
+// |                |------------------------------|----------------------------------------------|
+// |				|	带宽(Hz)	|	延迟(ms)	|	带宽(Hz)	|	延迟(ms)	|	频率(kHz)	|
+// |----------------------------------------------------------------------------------------------|
+// |	0x00		|		260	    |		0	   |	 256	   |	  0.98	   |	   8 	  |
+// |	0x01		|		184	    |		2.0	   |	 188	   |	  1.9	   |	   1 	  |
+// |	0x02		|		94	    |		3.0	   |	 98	   	   |	  2.8	   |	   1 	  |
+// |	0x03		|		44	    |		4.9	   |	 42	   	   |	  4.8	   |	   1 	  |
+// |	0x04		|		21	    |		8.5	   |	 20	   	   |	  8.3	   |	   1 	  |
+// |	0x05		|		10	    |		13.8   |	 10	   	   |	  13.4	   |	   1 	  |
+// |	0x06		|		5	    |		19.0   |	 5	   	   |	  18.6	   |	   1 	  |
+// |	0x07		|		       预留	   		   |	          预留	   			|	    8 	   |
+//
+//
+// !!!注意!!! 这个参数的选择, 直接决定了 陀螺仪采样率, 也就是决定了灵敏度
+//            所以, 按使用场景要合理选择:
+//                 - 平衡小车:
+//                   需高灵敏度, 选择 DLPF_CFG = 0x00, SMPRT_DIV = 7 (即: 1kHz 采样率), 
+//           否则就算用了 `互补滤波` 也很难稳定
+//
+// 关于采样率
+//
+// 公式:
+//   采样率 = 陀螺仪频率 / (1 + 采样分频)
+//     - 采样率: MPU6050数据的刷新频率
+//     - 采样分频: 初始化配置的 SMPRT_DIV
+//     - 陀螺仪频率: 初始化配置的 DLPF_CFG (即 Filter 参数) 决定了 陀螺仪频率 (需要参考下面的 `配置关系表`)
+//
+// 举例
+//   初始化配置:
+//     - DLPF_CFG = 0x00  (即: Filter = MPU6050_Filter_260Hz)
+//     - SMPRT_DIV = 7    (即: SMPRT_DIV = 7)
+//     则, 陀螺仪频率为 8kHz (根据 `上表` 可见)
+//
+//   带入公式:
+//     采样率 = 8kHz / (1 + 7) = 8000Hz / 8 = 1kHz
+//     即, 陀螺仪 1ms 刷新一次
+//
+//
 typedef enum
 {
-	MPU6050_Filter_260Hz = 0x00,	// 加速度计(Band: 260Hz, Delay: 0ms, Fs: 1kHz) + 陀螺仪(Band: 256Hz, Delay: 0.98ms, Fs: 8kHz)
-	MPU6050_Filter_184Hz = 0x01,  	// 加速度计(Band: 184Hz, Delay: 2.05ms, Fs: 1kHz) + 陀螺仪(Band: 188Hz, Delay: 1.9ms, Fs: 1kHz)
-	MPU6050_Filter_94Hz = 0x02,   	// 加速度计(Band: 94Hz, Delay: 4.9ms, Fs: 1kHz) + 陀螺仪(Band: 92Hz, Delay: 3.9ms, Fs: 1kHz)
-	MPU6050_Filter_44Hz = 0x03,   	// 加速度计(Band: 44Hz, Delay: 8.5ms, Fs: 1kHz) + 陀螺仪(Band: 42Hz, Delay: 7.9ms, Fs: 1kHz)
-	MPU6050_Filter_21Hz = 0x04,   	// 加速度计(Band: 21Hz, Delay: 17ms, Fs: 1kHz) + 陀螺仪(Band: 20Hz, Delay: 16.6ms, Fs: 1kHz)
-	MPU6050_Filter_10Hz = 0x05,   	// 加速度计(Band: 10Hz, Delay: 34ms, Fs: 1kHz) + 陀螺仪(Band: 10Hz, Delay: 32.8ms, Fs: 1kHz)
-	MPU6050_Filter_5Hz = 0x06     	// 加速度计(Band: 5Hz, Delay: 68ms, Fs: 1kHz) + 陀螺仪(Band: 5Hz, Delay: 66.6ms, Fs: 1kHz)
+	MPU6050_Filter_260Hz = 0x00,
+	MPU6050_Filter_184Hz = 0x01,
+	MPU6050_Filter_94Hz = 0x02,
+	MPU6050_Filter_44Hz = 0x03,
+	MPU6050_Filter_21Hz = 0x04,
+	MPU6050_Filter_10Hz = 0x05,
+	MPU6050_Filter_5Hz = 0x06
 } MPU6050_Filter_TypeDef;
 #define IS_MPU6050_FILTER(FILTER) (((FILTER) == MPU6050_Filter_260Hz) || ((FILTER) == MPU6050_Filter_184Hz) || \
 	((FILTER) == MPU6050_Filter_94Hz) || ((FILTER) == MPU6050_Filter_44Hz) || ((FILTER) == MPU6050_Filter_21Hz) || \
@@ -199,19 +247,30 @@ typedef struct
 	int16_t gz;		// 陀螺仪Z轴 (原始数据)
 } MPU6050_RawData_t;
 
-// 欧拉角 数据
+// 加速度计 测量数据 (已解算)
 typedef struct
 {
+	float pitch;	// 俯仰角 (欧拉角) Y轴 (抬头/低头)
 	float yaw;		// 偏航角 (欧拉角) Z轴 (左右旋转)
-	float roll;		// 翻滚角 (欧拉角) Y轴 (左右倾斜)
-	float pitch;	// 俯仰角 (欧拉角) X轴 (抬头/低头)
+	float roll;		// 翻滚角 (欧拉角) X轴 (左右倾斜)
+} MPU6050_AccelData_t;
+
+// 欧拉角 数据 (已解算)
+typedef struct
+{
+	float pitch;	// 俯仰角 (欧拉角) Y轴 (抬头/低头)
+	float yaw;		// 偏航角 (欧拉角) Z轴 (左右旋转)
+	float roll;		// 翻滚角 (欧拉角) X轴 (左右倾斜)
 } MPU6050_EulerData_t;
 
 // 完整数据
 typedef struct
 {
-	MPU6050_RawData_t raw;
-	MPU6050_EulerData_t euler;
+	float gyro_dt;				// 陀螺仪角速度积分采样时间间隔 (单位: s)
+
+	MPU6050_RawData_t raw;		// 原始传感器数据
+	MPU6050_AccelData_t accel;	// 加速度计测量数据
+	MPU6050_EulerData_t euler;	// 欧拉角数据 (互补滤波, 已解算)
 } MPU6050_Data_t;
 
 void MPU6050_Init(void);
@@ -219,6 +278,6 @@ uint8_t MPU6050_GetID(void);
 void MPU6050_GetRaw(MPU6050_Data_t *raw);
 void MPU6050_GetEuler(MPU6050_Data_t *euler);
 void MPU6050_GetData(MPU6050_Data_t *data);
-int16_t MPU6050_GetTempture();
+int16_t MPU6050_GetTempture(void);
 
 #endif

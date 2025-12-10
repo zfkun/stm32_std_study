@@ -550,6 +550,11 @@
           <GroupName>App/Bsp</GroupName>
           <Files>
             <File>
+              <FileName>bsp_utils.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\core\bsp\bsp_utils.c</FilePath>
+            </File>
+            <File>
               <FileName>bsp_delay.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\core\bsp\bsp_delay.c</FilePath>
@@ -595,14 +600,14 @@
               <FilePath>..\..\core\hardware\ad.c</FilePath>
             </File>
             <File>
-              <FileName>as5600_sensor.c</FileName>
+              <FileName>as5600.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\core\hardware\as5600_sensor.c</FilePath>
+              <FilePath>..\..\core\hardware\as5600.c</FilePath>
             </File>
             <File>
-              <FileName>counter_sensor.c</FileName>
+              <FileName>counter.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\core\hardware\counter_sensor.c</FilePath>
+              <FilePath>..\..\core\hardware\counter.c</FilePath>
             </File>
             <File>
               <FileName>dma.c</FileName>
@@ -610,9 +615,9 @@
               <FilePath>..\..\core\hardware\dma.c</FilePath>
             </File>
             <File>
-              <FileName>encoder_sensor.c</FileName>
+              <FileName>encoder.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\core\hardware\encoder_sensor.c</FilePath>
+              <FilePath>..\..\core\hardware\encoder.c</FilePath>
             </File>
             <File>
               <FileName>ic.c</FileName>
@@ -635,9 +640,9 @@
               <FilePath>..\..\core\hardware\motor.c</FilePath>
             </File>
             <File>
-              <FileName>mpu6050_sensor.c</FileName>
+              <FileName>mpu6050.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\core\hardware\mpu6050_sensor.c</FilePath>
+              <FilePath>..\..\core\hardware\mpu6050.c</FilePath>
             </File>
             <File>
               <FileName>oled.c</FileName>
